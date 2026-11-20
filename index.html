@@ -77,9 +77,24 @@ h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:v
 .spinb .tag{display:inline-block;font-family:'Special Elite',serif;font-size:12px;background:rgba(0,0,0,.22);border-radius:8px;padding:1px 7px;margin-left:7px;vertical-align:middle}
 .spinb .tag.up{background:#7a1e12;color:#ffd6cc}.spinb .tag.cool{background:#1f5a2e;color:#c8ffd2}
 .hubt{font-family:'Rye',serif;fill:var(--accent);text-anchor:middle;dominant-baseline:central;pointer-events:none;animation:bpulse 1s ease-in-out infinite}
-.heatticks{position:relative;height:12px;font-size:10px;opacity:.7;margin-top:1px}
-.heatticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.heatticks span.end{transform:none;right:0}
+.tapbox{display:block;width:100%;text-align:left;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;border-radius:6px}
+.tapbox:hover:not(:disabled){border:0;background:rgba(255,255,255,.04)}
+.qi{display:inline-block;width:16px;height:16px;line-height:15px;text-align:center;border-radius:50%;border:1px solid currentColor;font-size:11px;opacity:.7;margin-left:6px;vertical-align:1px}
+.eyebtn{display:inline;width:auto;color:#cdbdff}.eyebtn b{color:#fff;font-weight:400}
+.rchips{display:flex;flex-wrap:wrap;gap:6px}
+.rchip{font-size:13px;padding:4px 9px;border-radius:14px;color:var(--accent)}
+.rchip.cosmic{color:#b79bff}
+.sheet{text-align:left;max-width:520px}
+.sheet h3{text-align:center;font-size:22px;margin-bottom:4px}
+.sheet .lede{text-align:center;opacity:.85;margin:0 0 10px}
+.sheet h4{font-family:'Rye',serif;font-weight:400;color:var(--accent);font-size:15px;margin:14px 0 4px}
+.sheet ul{margin:0;padding-left:20px}.sheet li{margin:3px 0;line-height:1.4}
+.sheet li b{color:var(--accent);font-weight:400}
+.sheet .now{background:rgba(0,0,0,.3);border:1px solid var(--edge);border-radius:8px;padding:8px 10px;margin:8px 0}
+.sheet .btns{text-align:center;margin-top:16px;display:flex;gap:8px;justify-content:center}
+.topic{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px}
+.topic b{display:block;font-family:'Rye',serif;font-weight:400;color:var(--accent);font-size:15px}
+.topic span{font-size:13px;opacity:.85}
 .nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-bottom:8px}
 .board{position:relative;height:calc(3*var(--rh,58px));margin-bottom:10px}
 .board .spot{position:absolute;border-radius:0;min-height:0;padding:1px;display:flex;flex-direction:row;flex-wrap:wrap;gap:0 4px;align-items:center;align-content:center;justify-content:center;overflow:hidden}
@@ -113,9 +128,10 @@ button.bet:disabled,button.has:disabled{opacity:.85}
 .card.sold{opacity:.3}
 .card.on{background:var(--panel);color:var(--ink);outline:3px solid var(--accent)}
 .cosmic b{color:#b79bff}
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:16px;overflow:auto;z-index:5}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:flex-start;justify-content:flex-start;padding:16px;overflow:auto;z-index:5}
 #overlay.show{display:flex}
-.modal{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:22px;max-width:680px;width:100%;text-align:center}
+.modal{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:22px;max-width:680px;width:100%;text-align:center;margin:auto}
+.modal.sheet{text-align:left}
 .modal p{line-height:1.5}
 .modal .shop{text-align:left;margin-top:12px}
 .hint{font-size:12px;opacity:.7}
@@ -225,7 +241,7 @@ button.qm{font-size:10px;padding:0 6px}
 .betbar .chips,.betbar .tools{gap:4px}
 .betbar button{flex:0 0 auto;padding:3px 7px}
 .tools .tl{display:none}.tools .ti{display:inline}
-.coach,.heatticks,#lower .nudgeb,#eyeLine .luckline{display:none}
+.coach,#lower .nudgeb,#eyeLine .luckline,.qi{display:none}
 .payok{font-size:12px}.payok .bon{display:inline;font-size:12px}
 body:not(.fs) .outs .lw,.outs .pw{display:none}
 .felt>.act .spinb{flex:0 0 auto;padding:6px 12px}
@@ -435,7 +451,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v32',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v33',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -906,37 +922,9 @@ function showItems(tab){
     if(painted.length)w+=row('Repainted',painted.join(', '));
     h+='<h3>Wheel Changes</h3>'+(w?row('Size','Your wheel has '+G.wheel.length+' pockets. The House built '+G.house+'.')+w:none("None yet. Your wheel is exactly what the House built."));
   }else if(tab==='mods'){
-    const parts=[];
-    if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push(['Hot Streak'+(c>1?' x'+c:''),G.streak+' win'+pl(G.streak)+' in a row, so +'+st*10*c+'%.'+(st<5?' Your next win raises it to +'+(st+1)*10*c+'%.':' That is the cap.')+' A losing spin resets it to zero.',1+0.1*c*st]);}
-    if(G.cold)parts.push(['Cold hands','A zero cursed you. Winnings on your next spin are halved.',0.5]);
-    if(G.hunger>0)parts.push(['The Hunger',G.hunger+' pocket'+pl(G.hunger)+' eaten, so +'+G.hunger*10+'%. It grows every night.',1+0.1*G.hunger]);
-    if(has('undertaker')){const c=cnt('undertaker'),k=Math.max(0,G.house-G.wheel.length);parts.push(["Undertaker's Ledger"+(c>1?' x'+c:''),'Your wheel is '+k+' pocket'+pl(k)+" smaller than the House's, so +"+k*2*c+'%.',1+0.02*c*k]);}
-    const m=mult({gold:false}),gm=2+cnt('tooth'),golds=G.wheel.filter(p=>p.gold).map(p=>p.void?'Void':lab(p.num));
-    h+='<h3>Payout Multiplier</h3><div class="bigm">Your next win pays x'+m.toFixed(2)+'</div>'+(parts.length?parts.map(x=>row(x[0],x[1],'','x'+x[2].toFixed(2))).join('')+(parts.length>1?none('These multiply together.'):''):none('Nothing is boosting your payouts yet. Wins pay at plain table odds.'));
-    h+='<h3>Heat</h3>'+(heatOn()?row('Heat right now',G.heat+' of 100.'+(locked()?' Your tricks are locked.':''))+
-      row('Safe','Honest wins of any size, and bets up to '+fmt(heatFree())+" a spin ("+(G.night<=2?'twice':'the same as')+" tonight's tab).")+
-      row('Raises it',"Betting over that: the bigger the bet, the more it adds. Magnet +"+HEAT.mag+", Nudge +"+HEAT.nudge+", each Extra Ball +"+HEAT.ball+". Winning on a rigged pocket (gold or copied) +"+HEAT.tamper+". A win over "+fmt(winFreeChips())+" that came off a trick or a rigged pocket: every tab's worth over that adds "+winMult()+".")+row('Winning streaks','A 3rd winning spin in a row adds '+HEAT.streak+', a 4th '+HEAT.streak*2+', a 5th '+HEAT.streak*3+', and so on. A streak alone never locks your tricks or gets you caught: it stops at 74, or at 99 once you are past 75. On a spin where you also used a trick, it counts in full.'+(G.streak>=2?' You have won '+G.streak+' in a row, so your next win adds up to '+HEAT.streak*(G.streak-1)+'.':''))+
-      row('Lowers it','Any spin that adds no Heat: -'+HEAT.cool+'. A losing spin: -'+HEAT.lose+'. Every new night cuts it in half.')+
-      row('At 75','He swaps the ball. Magnet, Nudge and Extra Ball stop working until Heat drops.')+
-      row('At 100','You are caught. He takes that spin\'s winnings, cuts your chips down to tonight\'s tab if you hold more, and takes one of your relics. Then Heat drops to 50.'):none('The dealer starts watching for cheats on night 3.'));
-    {const st=luckSteps();h+='<h3>Lucky Draw</h3>'+row('How it works','Put chips on the Lucky Draw square. If the ball lands on a starred pocket you get an item, not chips. The stake is spent either way. The Eye still wins: a watched pocket gives nothing.')+row('Tiers tonight',fmt(st[0])+' for '+TIERN[1]+'. '+fmt(st[1])+' for '+TIERN[2]+'. '+fmt(st[2])+' for '+TIERN[3]+'.')+row('Starred now',(luckyNames().join(', ')||'none')+'. That is a '+pct(G.lucky.length/Math.max(1,G.wheel.length))+' chance.');}
-    h+='<h3>The Back Room</h3>'+row('Limits','Each night you can buy at most 2 relics, 2 wheel tools and 2 tricks. Restocking changes what is on offer, not the limits, and costs double each time.');
-    h+='<h3>Zeros</h3>'+(G.night>=3?row('Curses','Land on a zero and the House lays one at random: it takes 10% of your chips, opens a dark pocket, steals a trick, raises tonight\'s tab, strips gold off a pocket, grows another zero, halves your next win, or takes a spin.'):none('From night 3, landing on a zero lays a curse on you.'));
-    h+='<h3>The Eye</h3>'+(G.night>=4?row('Watching now',watchNames().join(', ')||'nothing')+row('What it does','A ball that lands on a watched pocket pays nothing. Winning bets only get their stake back. It moves after every spin and drifts toward where you last won.'):none('It opens on night 4.'));
-    if(golds.length||has('tooth'))h+=row('Gold pockets',golds.length?'If the ball lands on '+golds.join(', ')+', that win is multiplied again. Gold flakes off after 3 hits.':'None on your wheel yet.','','x'+gm);
-    const now=o=>m===1?'':num(o*m)+' to 1 now',sb=baseOdds('n2'),eb=baseOdds('red'),t=G.N/3;
-    h+='<h3>What Each Bet Pays</h3>'+none('The table has '+G.N+' numbers tonight. Payouts grow when the table grows.')+
-      row('Straight (1 number)',sb+' to 1'+(has('longshot')?' with The Long Shot':'')+(has('deadman')?'. On 1 and 8 it is '+baseOdds('n1')+" to 1 with Dead Man's Hand":'')+'.','',now(sb))+
-      row('Split (2 numbers)',baseOdds('s1_2')+' to 1.','',now(baseOdds('s1_2')))+row('Corner (4 numbers)',baseOdds('c1_2_4_5')+' to 1.','',now(baseOdds('c1_2_4_5')))+
-      row('Thirds and columns ('+t+' numbers)','2 to 1.','',now(2))+row('Red, Black, Odd, Even, low half, high half',num(eb)+' to 1'+(has('horseshoe')?' with Rusty Horseshoe':'')+'.','',now(eb))+
-      (has('unwritten')?row('The Void','2 to 1 with The Unwritten Square.','cosmic',now(2)):'');
-    const rules=[['preacher','Zeros pay '+cnt('preacher')+' to 1'],['snake',Math.max(0,cnt('snake')-G.snakeUsed)+' left tonight'],['deed','15%, up to '+fmt(Math.round(TOLLS[G.night-1]*0.25))],['eye','Active'],['felt','Voids give bets back'],['unwritten','Active'],['noneuclid','Active']].filter(x=>has(x[0]));
-    if(rules.length)h+='<h3>Rule Changes</h3>'+rules.map(x=>{const r=RELICS.find(y=>y.id===x[0]);return row(r.name+(cnt(r.id)>1?' x'+cnt(r.id):''),rtext(r,cnt(r.id)),r.cosmic?'cosmic':'',x[1]);}).join('');
-    h+='<h3>Your Tricks</h3>'+row('Magnet strength','A magnetized pocket is '+magStr()+' times as likely to be hit.'+(has('pull')?'':' Mother Lode raises this.'),'',G.charges.magnet+' left')+
-      row('Nudge reach','Up to '+reach()+' pocket'+pl(reach())+' either way.'+(has('reach')?'':' Long Reach raises this.'),'',G.charges.nudge+' left')+
-      row('Tool reach','Pry Bar, Branding Iron and Paint Bucket can each be used on '+span()+' pocket'+pl(span())+' of your choice.'+(has('heavy')?'':' Heavy Hands raises this.'));
-    h+='<h3>Every Night You Get</h3>'+row('Spins',String(5+cnt('watch'))+'.')+row('Extra Ball',G.charges.ball+' charge'+pl(G.charges.ball)+' left.')+
-      row('Fresh charges',perNight('nudge')+perNight('magnet')+perNight('ball')?'Nudge +'+perNight('nudge')+', Magnet +'+perNight('magnet')+', Extra Ball +'+perNight('ball')+' from your relics.':'None. Every trick is used up for good. Buy more in the back room.');
+    const m=mult({gold:false});
+    h+=(m!==1?'<div class="bigm">Your next win pays x'+m.toFixed(2)+'</div>':'')+
+      ['bet','heat','pay','tricks','lucky','zeros','eye','shop'].map(k=>'<button class="topic" data-act="sheet" data-t="'+k+'" data-back="1"><b>'+SHEETS[k].t+'</b><span>'+SHEETS[k].d+'</span></button>').join('');
   }else{
     const seen=cosmicSeen(),hid=row('???','Something you have not run into yet.','cosmic');
     h+='<h3>Relics ('+RELICS.length+')</h3><div class="hint">Passive effects that last the whole run. You pick one to start and buy more in the back room. Most of them stack: buy a second copy and the effect doubles up, but every copy you already own raises the price of the next.</div>'+
@@ -948,13 +936,45 @@ function showItems(tab){
   h+='<div style="text-align:center;margin-top:16px"><button class="big" data-act="closeItems">Close</button></div></div>';
   const o=$('overlay');o.innerHTML=h;o.className='show';
 }
-function showHelp(){
-  const o=$('overlay');
-  o.innerHTML='<div class="modal dlg" style="text-align:left"><h3 style="text-align:center">How to bet</h3>'+
-   ['Pick a chip size, then tap a number, a color or a group to put that much on it. Tap again to add more.','The round dots between two numbers bet on both. The square dots where four numbers meet bet on all four.','Once chips are down, every spot and every wheel pocket shows what you would win or lose if the ball lands there.','The % is your real chance on tonight\'s wheel. Payouts go up as the table grows.','Remove takes chips back off a bet. Rebet repeats your last spin. Clear takes everything back.','Tap any pocket on the wheel to see what it does.'].map(t=>'<p>'+t+'</p>').join('')+
-   '<div style="text-align:center"><button class="big" data-act="closeItems">Got it</button></div></div>';
-  o.className='show';
+const li=a=>'<ul>'+a.filter(Boolean).map(t=>'<li>'+t+'</li>').join('')+'</ul>';
+const sec=(h,a)=>'<h4>'+h+'</h4>'+li(a);
+const SHEETS={
+ bet:{t:'How to bet',d:'Placing chips, reading the table',f:()=>sec('Placing bets',['Pick a chip size, then tap a number, a color or a group. Tap again to add more.','The round dots between two numbers bet on both. The square dots where four meet bet on all four.','<b>Remove</b> takes chips back off a bet. <b>Rebet</b> repeats your last spin. <b>Clear</b> takes everything back.'])+
+   sec('Reading the table',['Once chips are down, every spot and every pocket shows what you would win or lose if the ball lands there.','The % is your real chance on tonight\'s wheel.','Tap any pocket on the wheel to see what it does.'])+
+   sec('The night',['You get '+(5+cnt('watch'))+' spins to cover the tab. Pay it at closing time or the run ends.','Covered early? Pay and leave, and get 10% of the tab back for each unused spin (up to 5).'])},
+ heat:{t:'Heat',d:'Why Silas watches you, and what he does about it',f:()=>'<p class="lede">How sure Silas is that you are cheating. Honest wins of any size never raise it.</p>'+
+   '<div class="now">Heat now: <b>'+G.heat+'</b> / 100. Safe bet tonight: up to <b>'+fmt(heatFree())+'</b> a spin.</div>'+
+   sec('What raises it',['Betting over '+fmt(heatFree())+' a spin. The bigger the bet, the more it adds.','<b>Magnet</b> +'+HEAT.mag+' · <b>Nudge</b> +'+HEAT.nudge+' · <b>Extra Ball</b> +'+HEAT.ball+' each.','Winning on a <b>rigged pocket</b> (gold or copied) +'+HEAT.tamper+'.','A big win that came off a trick.','3 or more wins in a row: +'+HEAT.streak+', then +'+HEAT.streak*2+', then +'+HEAT.streak*3+'. A streak alone always stops short of the next line.'])+
+   sec('What lowers it',['A clean spin: -'+HEAT.cool+'.','A losing spin: -'+HEAT.lose+'.','Each new night cuts it in half.'])+
+   sec('What happens',['<b>50:</b> he starts watching you closely.','<b>75:</b> your tricks are locked until it drops.','<b>100:</b> caught. Your winnings are gone, your chips are cut down to tonight\'s tab, and he keeps one of your relics. Heat drops to 50.'])+
+   sec('Staying out of trouble',['Keep bets at or under '+fmt(heatFree())+' and you stay invisible.','Follow a trick with a clean spin or two to cool off.','Check the Spin button: it shows the Heat a spin will add before you commit.','The safe bet is twice the tab on nights 1 and 2, then equal to the tab.'])},
+ pay:{t:'Payouts',d:'What each bet pays tonight, and your bonuses',f:()=>{const m=mult({gold:false}),num=v=>(Math.round(v*100)/100).toString(),parts=[];
+   if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push('Hot Streak: '+G.streak+' in a row, +'+st*10*c+'%.');}
+   if(G.cold)parts.push('Cold hands: your next win is halved.');
+   if(G.hunger>0)parts.push('The Hunger: +'+G.hunger*10+'%.');
+   if(has('undertaker')){const k=Math.max(0,G.house-G.wheel.length);parts.push("Undertaker's Ledger: wheel "+k+' smaller than the House\'s, +'+k*2*cnt('undertaker')+'%.');}
+   const rules=['preacher','eye','felt','unwritten','noneuclid','deed','snake'].filter(has).map(id=>{const r=RELICS.find(x=>x.id===id);return '<b>'+r.name+':</b> '+rtext(r,cnt(id));});
+   return '<div class="now">'+(m===1?'No bonuses right now. Wins pay plain table odds.':'Your next win pays <b>x'+m.toFixed(2)+'</b>.')+'</div>'+(parts.length?li(parts):'')+
+   sec('Tonight\'s table ('+G.N+' numbers)',['<b>Straight</b> (1 number): '+baseOdds('n2')+' to 1'+(has('deadman')?'. On 1 and 8: '+baseOdds('n1')+' to 1':'')+'.','<b>Split</b> (2): '+baseOdds('s1_2')+' to 1. <b>Corner</b> (4): '+baseOdds('c1_2_4_5')+' to 1.','<b>Thirds and columns:</b> 2 to 1.','<b>Red, black, odd, even, halves:</b> '+num(baseOdds('red'))+' to 1.',has('unwritten')?'<b>The Void:</b> 2 to 1.':'','Payouts grow as the table grows.'])+
+   sec('Gold pockets',['A win on gold pays x'+(2+cnt('tooth'))+'. The gold flakes off after 3 hits.'])+
+   (rules.length?sec('Rule changes',rules):'');}},
+ tricks:{t:'Tricks',d:'Magnet, Extra Ball and Nudge',f:()=>sec('Your tricks',['<b>Magnet</b> ('+G.charges.magnet+' left): before a spin, pick a pocket. It becomes '+magStr()+' times as likely to be hit. Heat +'+HEAT.mag+'.','<b>Extra Ball</b> ('+G.charges.ball+' left): spin up to 3 more balls. Every ball pays. Heat +'+HEAT.ball+' each.','<b>Nudge</b> ('+G.charges.nudge+' left): after the ball lands, move it up to '+pls(reach(),'pocket')+'. Heat +'+HEAT.nudge+'.'])+
+   sec('Good to know',['Each use is gone for good. Buy more in the back room.','At 75 Heat your tricks are locked.','Mother Lode makes the Magnet stronger. Long Reach makes the Nudge reach further.'])},
+ lucky:{t:'Lucky Draw',d:'Bet chips to win an item instead of chips',f:()=>{const st=luckSteps();return sec('How it works',['Put chips on the Lucky Draw square. If the ball lands on a starred pocket, you win an item instead of chips.','The stake is spent win or lose.','The stars move every spin. A pocket the Eye is watching gives nothing.'])+
+   sec('Tonight',['<b>'+fmt(st[0])+'</b> wins '+TIERN[1]+'.','<b>'+fmt(st[1])+'</b> wins '+TIERN[2]+'.','<b>'+fmt(st[2])+'</b> wins '+TIERN[3]+'.','Starred now: '+(luckyNames().join(', ')||'none')+' ('+pct(G.lucky.length/Math.max(1,G.wheel.length))+' to hit).']);}},
+ zeros:{t:'Zeros and dark pockets',d:'What the green and black pockets do',f:()=>sec('Zeros',['A zero loses every bet except a straight bet on it'+(has('preacher')?', but your Preacher\'s Coin makes it pay every bet '+cnt('preacher')+' to 1':'')+'.',G.night>=3?'Landing on one also lays a curse on you.':'From night 3, landing on one also lays a curse on you.'])+
+   sec('The curses',['Lose 10% of your chips','A dark pocket opens','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'])+
+   (G.night>=4?sec('Dark pockets',[has('felt')?'With The Thing in the Felt, a ball in one gives every bet back.':'A ball that lands in one swallows every bet on the table.',has('unwritten')?'The Unwritten Square lets you bet on them, 2 to 1.':'']):'')},
+ eye:{t:'The Eye',d:'The pockets that pay nothing',f:()=>G.night<4?'<p class="lede">It opens on night 4.</p>':sec('How it works',['Each spin the Eye watches a few pockets, marked in violet on the wheel and the table.','A ball that lands on one pays nothing. Winning bets only get their stake back.','It moves every spin and drifts toward where you last won.'])+'<div class="now">Watching now: <b>'+(watchNames().join(', ')||'nothing')+'</b></div>'},
+ shop:{t:'The back room',d:'Buying relics, tools and tricks',f:()=>sec('Each night',['After you pay the tab, spend what is left.','Buy up to 2 relics, 2 wheel tools and 2 tricks.','Restock for new offers, up to 2 times. The price doubles each time.'])+
+   sec('Prices',['Most relics stack, but each copy you own raises the price of the next.','Each Branding Iron makes the next cost 1.5 times as much.','Prices grow with the tab.'])}
+};
+function showSheet(k,back){
+  const S=SHEETS[k];if(!S)return;const o=$('overlay');
+  o.innerHTML='<div class="modal sheet"><h3>'+S.t+'</h3>'+S.f()+'<div class="btns">'+(back?'<button data-act="mods">Back</button>':'')+'<button class="big" data-act="closeItems">Got it</button></div></div>';
+  o.className='show';try{o.scrollTop=0;}catch(e){}
 }
+function showHelp(){showSheet('bet');}
 function intro(){
   const o=$('overlay'),sv=loadSave();o.className='show';
   o.innerHTML='<div class="modal"><div class="portrait">'+dealerSVG(1)+'</div><h1>Dead Man\'s Wheel</h1><p>A roulette wheel in a saloon at the edge of nowhere. Eight nights. Every night the tab gets bigger and so does the wheel. Pay by closing time or you never leave.</p>'+
@@ -1132,10 +1152,10 @@ function render(){
   $('say').textContent=G.msg;$('result').textContent=G.res;
   if(G.faceStage!==G.night){G.faceStage=G.night;$('face').innerHTML=dealerSVG(G.night);}
   {const sh=G.mode==='shop'&&G.night<8;$('stats').innerHTML='<div><b>'+fmt(G.chips)+'</b><small>Chips</small></div><div><b>'+fmt(sh?TOLLS[G.night]:toll())+'</b><small>'+(sh?'Next tab':'Tab due')+'</small></div><div><b>'+(sh?5+cnt('watch'):G.spins)+'</b><small>'+(sh?'Spins next':'Spins left')+'</small></div><div><b>'+G.wheel.length+'</b><small>Pockets</small></div>';}
-  $('relics').innerHTML=G.relics.length?owned().map(e=>'<div class="relic'+(e[0].cosmic?' cosmic':'')+'"><b>'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</b>: '+rtext(e[0],e[1])+'</div>').join(''):'<div class="hint">Nothing yet.</div>';
+  $('relics').innerHTML=G.relics.length?'<div class="rchips">'+owned().map(e=>'<button class="rchip'+(e[0].cosmic?' cosmic':'')+'" data-act="items">'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</button>').join('')+'</div>':'<div class="hint">Nothing yet.</div>';
   const bet=G.mode==='bet'&&!locked();
-  $('eyeLine').innerHTML=(G.bets.luck&&G.lucky.length?'<span class="luckline">★ Lucky: <b>'+luckyNames().join(', ')+'</b></span> ':'')+(G.watch.length&&G.mode!=='shop'?'👁 <b>'+watchNames().join(', ')+'</b> pay nothing':'');
-  $('heatBox').innerHTML=heatOn()?'<div class="heatlbl">Heat <b>'+G.heat+'</b> / 100'+(locked()?' · tricks locked':G.heat>=50?' · he is watching':'')+' <button class="qm" data-act="mods">How Heat works</button></div><div class="heatbar"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:50%"></u><u style="left:75%"></u></div><div class="heatticks"><span style="left:50%">watched</span><span style="left:75%">locked</span><span class="end">caught</span></div><div class="heattip">Honest wins are safe, and bets up to <b>'+fmt(heatFree())+'</b>. Tricks and bigger bets raise Heat.</div>':'';
+  $('eyeLine').innerHTML=(G.bets.luck&&G.lucky.length?'<button class="tapbox eyebtn luckline" data-act="sheet" data-t="lucky">★ Lucky: <b>'+luckyNames().join(', ')+'</b></button> ':'')+(G.watch.length&&G.mode!=='shop'?'<button class="tapbox eyebtn" data-act="sheet" data-t="eye">👁 <b>'+watchNames().join(', ')+'</b> pay nothing<span class="qi">?</span></button>':'');
+  $('heatBox').innerHTML=heatOn()?'<button class="tapbox" data-act="sheet" data-t="heat"><span class="heatlbl" style="display:block">Heat <b>'+G.heat+'</b> / 100'+(locked()?' · tricks locked':G.heat>=50?' · he is watching':'')+'<span class="qi">?</span></span><span class="heatbar" style="display:block"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:50%"></u><u style="left:75%"></u></span></button>':'';
   $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(locked()?'\u{1F512} ':'')+(G.armed==='magnet'?'Magnet: now tap a pocket':G.magnet>=0&&G.wheel[G.magnet]?'Magnet: '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' \u2715':'Magnet ('+G.charges.magnet+')')+'</button>'+
     '<button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(bet&&G.charges.ball>0?'':' disabled')+' title="Spin extra balls. Tap again to add more.">'+(locked()?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':'')+' this spin':'Extra Ball ('+G.charges.ball+')')+'</button>'+
     '<button disabled title="After the ball lands you may move it one pocket.">'+(locked()?'\u{1F512} ':'')+'Nudge ('+G.charges.nudge+')</button>'+
@@ -1165,6 +1185,7 @@ document.addEventListener('click',e=>{
     case'clear':clearBets();break;
     case'fs':{const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);if(inFs)G.fs=false;else{G.fs=true;G.fsHold=false;}render();}break;
     case'help':showHelp();break;
+    case'sheet':showSheet(b.dataset.t,!!b.dataset.back);break;
     case'remove':G.remove=!G.remove;say(G.remove?'Removing: tap a bet to pull chips off it. Each tap takes back the selected chip amount.':'Back to placing bets.');render();break;
     case'rebet':rebet();break;
     case'settle':endNight();break;
