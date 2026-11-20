@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dead Man's Wheel</title>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#2a1a10;--panel:#3b2616;--ink:#f1e2c2;--accent:#d9a441;--red:#a8321f;--black:#1c1512;--green:#2f6b3a;--felt:#24503a;--edge:#6b4423}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Special Elite',Georgia,serif;min-height:100vh;transition:background 1.5s}
+#app{max-width:1060px;margin:0 auto;padding:12px}
+header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-family:'Rye',Georgia,serif;font-weight:400;color:var(--accent);margin:0;font-size:clamp(22px,4vw,34px);letter-spacing:1px}
+#nightLbl{opacity:.8}
+header .sp{flex:1}
+button{font-family:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--edge);border-radius:6px;padding:7px 11px;cursor:pointer;font-size:14px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.on{background:var(--accent);color:#1a1008;border-color:var(--accent)}
+button.big{font-family:'Rye',serif;font-size:19px;padding:11px 22px;background:var(--accent);color:#1a1008;border-color:var(--accent)}
+#dealer{margin:8px 0;padding:10px 14px;background:var(--panel);border-left:4px solid var(--accent);border-radius:4px;min-height:44px;font-size:15px}
+#result{margin-top:4px;color:var(--accent);min-height:20px}
+main{display:grid;grid-template-columns:minmax(280px,440px) 1fr;gap:14px;align-items:start}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+#wheel{width:100%;display:block;touch-action:manipulation}
+.rim{fill:var(--edge);stroke:var(--accent);stroke-width:2}
+.pk{stroke:var(--accent);stroke-width:1;cursor:pointer}
+.pk.red{fill:var(--red)}.pk.black{fill:var(--black)}.pk.green{fill:var(--green)}
+.pk.void{fill:#000;stroke:#7b5cff}
+.pk.gold{stroke:#ffd84a;stroke-width:3;fill-opacity:.9}
+.pk.mag{stroke:#fff;stroke-width:3}
+.magov{fill:#fff;pointer-events:none;animation:magp 1s ease-in-out infinite}
+@keyframes magp{0%,100%{fill-opacity:.1}50%{fill-opacity:.4}}
+.nudgeov{fill:#8dff9a;stroke:#fff;stroke-width:3;pointer-events:none;animation:magp .8s ease-in-out infinite}
+.magic{font-size:16px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.arming .rim{stroke:#fff;stroke-width:5;animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{stroke-opacity:.2}}
+.oc{display:inline-block;background:rgba(0,0,0,.62);border-radius:8px;padding:1px 6px;font-size:12px;margin-top:3px;color:var(--ink)}
+.oc.w{color:#8dff9a}.oc.l{color:#ff9d8f}
+.outs .oc{display:block;width:fit-content;margin:3px auto 0}
+.ocw{font-family:'Special Elite',serif;font-size:11px;text-anchor:middle;dominant-baseline:central;pointer-events:none;fill:#ddd;stroke:#000;stroke-width:2.5px;paint-order:stroke}
+.ocw.w{fill:#8dff9a}.ocw.l{fill:#ff9d8f}
+#wheel{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.pk.hit{filter:brightness(2.1)}
+.arming .pk:hover{filter:brightness(1.6)}
+.pl{fill:var(--ink);font-family:'Rye',serif;font-size:17px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.hub{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.hub2{fill:var(--bg);stroke:var(--edge);stroke-width:2}
+.ball{fill:#fffbe8;stroke:#333;stroke-width:1;pointer-events:none}
+.d2 #wheel{animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.015)}}
+.d3 h1{animation:shiver 3s steps(2) infinite}
+@keyframes shiver{0%,92%{transform:none}94%{transform:translate(2px,-1px) skewX(4deg)}97%{transform:translate(-2px,1px)}}
+#powers{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-family:'Rye',serif;font-size:22px;color:var(--accent);font-weight:400}
+.stats small{opacity:.75}
+.relic{padding:5px 0;border-bottom:1px dashed var(--edge);font-size:14px}
+.relic:last-child{border:0}
+.relic b{color:var(--accent);font-weight:400}
+h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:var(--accent)}
+#lower{margin-top:12px}
+.felt{background:var(--felt);border:2px solid var(--edge);border-radius:10px;padding:12px}
+.felt>.act{position:sticky;bottom:0;background:var(--felt);padding:8px 0 6px;z-index:4}
+.chips,.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-bottom:8px}
+.board{position:relative;height:calc(3*var(--rh,58px));margin-bottom:10px}
+.board .spot{position:absolute;border-radius:0;min-height:0;padding:1px;display:flex;flex-direction:row;flex-wrap:wrap;gap:0 4px;align-items:center;align-content:center;justify-content:center;overflow:hidden}
+.board .spot .l{font-size:16px;display:inline}
+.board .spot .stake{position:static;font-size:11px;padding:0 5px;margin:0}
+.board .oc{font-size:11px;padding:0 4px;margin:0}
+.board .spot.bet{box-shadow:inset 0 0 0 2px var(--accent)}
+button.bet:disabled,button.has:disabled{opacity:.85}
+.hot{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;padding:0;border-radius:11px;background:transparent;border:0;font-size:10px;z-index:2;line-height:1}
+.hot::after{content:'';display:block;width:7px;height:7px;margin:auto;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid var(--accent)}
+.hot.cn::after{border-radius:1px}
+.hot.has{width:auto;min-width:20px;height:18px;padding:0 5px;background:var(--accent);color:#1a1008;border:1px solid #1a1008;z-index:3}
+.hot.has::after{display:none}
+.hot:disabled{opacity:.6}
+.outs{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+.outs .luckspot{grid-column:1/-1}
+.spot{position:relative;padding:8px 4px;text-align:center;line-height:1.25;min-height:58px}
+.spot .l{font-family:'Rye',serif;font-size:17px;display:block}
+.spot small{opacity:.8;font-size:11px}
+.spot.red{background:var(--red)}.spot.black{background:var(--black)}.spot.green{background:var(--green)}
+.spot .stake{position:absolute;top:-7px;right:-5px;background:var(--accent);color:#1a1008;border-radius:10px;padding:1px 7px;font-size:12px;border:1px solid #1a1008}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:10px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:8px;padding:10px;text-align:left;font-size:13px;line-height:1.35;display:block;width:100%}
+.card b{display:block;font-family:'Rye',serif;font-weight:400;color:var(--accent);font-size:15px;margin-bottom:3px}
+.card .p{display:block;margin-top:6px;color:var(--accent)}
+.card.sold{opacity:.3}
+.card.on{background:var(--panel);color:var(--ink);outline:3px solid var(--accent)}
+.cosmic b{color:#b79bff}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:16px;overflow:auto;z-index:5}
+#overlay.show{display:flex}
+.modal{background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:22px;max-width:680px;width:100%;text-align:center}
+.modal p{line-height:1.5}
+.modal .shop{text-align:left;margin-top:12px}
+.hint{font-size:12px;opacity:.7}
+.cap{font-family:'Special Elite',serif;font-size:12px;color:var(--ink);opacity:.8;margin-left:8px}
+.luckov{fill:#ffd84a;fill-opacity:.85;stroke:#fff3b0;stroke-width:1;pointer-events:none}
+.lstar{fill:#3a2500;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.spot.luckspot{background:#5a4208;border-color:#ffd84a;color:#ffe9a0}
+.board .spot.lucky{background-image:linear-gradient(rgba(255,216,74,.22),rgba(255,216,74,.22))}
+.ls{font-style:normal;color:#ffd84a;margin-right:2px}
+.luckline{color:#ffe9a0}.luckline b{color:#fff;font-weight:400}
+#tent{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+#tentBox{position:absolute}
+.tn{position:absolute;width:0;height:0;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
+.sg{position:absolute;left:0;top:0;transform-origin:50% 0;border-radius:45% 45% 50% 50%;animation:wr 3s ease-in-out infinite}
+.sg>.sg{left:50%;top:70%}
+@keyframes wr{0%,100%{transform:rotate(calc(var(--a)*-1))}50%{transform:rotate(var(--a))}}
+@media (prefers-reduced-motion:reduce){.sg{animation:none}}
+.face{display:block;width:100%;height:100%}
+.portrait{width:132px;height:132px;margin:0 auto 10px}
+#face{float:left;width:62px;height:62px;margin:0 12px 4px 0;cursor:pointer}
+#dealer::after{content:'';display:block;clear:both}
+.eyeov{fill:#7b5cff;fill-opacity:.38;stroke:#d6c8ff;stroke-width:2.5;pointer-events:none}
+.board .spot.watched{box-shadow:inset 0 0 0 3px #b79bff;filter:saturate(.6)}
+#eyeLine{color:#cdbdff;margin-top:3px}#eyeLine b{color:#fff;font-weight:400}
+.heatlbl{margin-top:5px;font-size:13px}.heatlbl b{color:#ffb36b;font-weight:400}
+.heattip{font-size:12px;opacity:.85;margin-top:3px;line-height:1.3}.heattip b{color:#ffb36b;font-weight:400}
+button.qm{padding:1px 8px;font-size:11px;margin-left:6px;border-radius:10px}
+.heattip .brief{display:none}
+.oc.c{color:#fff;background:#c0392b}.ocw.c{fill:#ff5a4a}
+.heatbar{position:relative;height:9px;border-radius:5px;background:rgba(0,0,0,.45);border:1px solid var(--edge);margin-top:3px;overflow:hidden}
+.heatbar i{display:block;height:100%;background:linear-gradient(90deg,#e2b04a,#e2622e 60%,#d21f1f)}
+.heatbar u{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.55)}
+button.big.danger{background:#c0392b;border-color:#ff9d8f;color:#fff}
+.nexttab{font-size:16px;padding:8px 10px;margin-bottom:10px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--accent)}
+.nexttab b{color:var(--accent);font-weight:400}
+.nexttab.bad{border-color:#ff9d8f;color:#ffb3a8;background:rgba(120,20,10,.45)}
+.nexttab.bad b{color:#fff}
+button.payok{border-color:#8dff9a;color:#8dff9a}
+.dlg{max-width:520px}
+.dlg h3{font-size:22px;margin-bottom:10px}
+.dlg p{font-size:16px;margin:8px 0}
+.dlg .big{margin-top:12px}
+#banner{display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:6;background:var(--accent);color:#1a1008;font-family:'Rye',serif;font-size:20px;padding:8px 18px;border-radius:10px;border:2px solid #1a1008;pointer-events:none;white-space:nowrap;animation:bpulse 1s ease-in-out infinite}
+#banner.show{display:block}
+@keyframes bpulse{50%{opacity:.6}}
+.fsinfo{display:none;font-size:13px;margin-bottom:6px}
+.fsinfo b{color:var(--accent);font-weight:400}
+.fsinfo span{display:block;color:var(--accent)}
+body.fs{overflow:hidden}
+body.fs #lower{position:fixed;inset:0;z-index:4;margin:0;overflow:hidden;background:var(--bg);grid-area:auto}
+body.fs .felt{height:100%;display:flex;flex-direction:column;border-radius:0;border:0;padding:8px}
+body.fs .fsinfo{display:block}
+body.fs .board{flex:1 1 auto;height:auto!important;min-height:0}
+body.fs .felt>.hint{display:none}
+body.fs .chips,body.fs .outs,body.fs .felt>.act{flex:0 0 auto}
+body.fs .felt>.act{position:static;margin-top:6px!important}
+body.fs .outs{grid-template-columns:repeat(4,1fr);gap:4px}
+body.fs .outs .spot{min-height:0;padding:4px 2px}
+body.fs .outs .spot .l{font-size:14px}
+body.fs .outs .oc{font-size:10px;margin:1px auto 0}
+body.fs .board .spot .l{font-size:clamp(14px,3.2vmin,22px)}
+.spot.voidspot{background:#000;border-color:#7b5cff;color:#d9d2ff}
+button.rm{background:#c0392b;border-color:#ff9d8f;color:#fff}
+.removing .spot:not(.bet):not(:disabled){opacity:.4}
+.removing .hot:not(.has){visibility:hidden}
+.removing .stake,.removing .hot.has{background:#c0392b;color:#fff;border-color:#fff}
+.inv{text-align:left;max-height:86vh;overflow:auto}
+.inv h3{margin-top:14px}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;position:sticky;top:-22px;background:var(--panel);padding:6px 0;z-index:2}
+.inv .hint{margin-bottom:4px}
+.bigm{font-family:'Rye',serif;font-size:22px;color:#8dff9a;text-align:center;margin:6px 0 8px}
+button.hotm{border-color:#8dff9a;color:#8dff9a}
+.inv .relic span{float:right;color:var(--accent);margin-left:10px}
+@media(max-width:520px){.hot{width:20px;height:20px}}
+@media (orientation:landscape) and (max-height:520px){
+html,body{height:100%;overflow:hidden}
+#app{max-width:none;height:100vh;height:100dvh;padding:4px 8px;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto 1fr;gap:4px 10px;grid-template-areas:"head head" "wheel stats" "wheel dealer" "wheel lower"}
+header{grid-area:head;gap:8px;align-items:center;flex-wrap:nowrap}
+h1{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nightLbl{font-size:12px;white-space:nowrap}
+header button{padding:3px 8px;font-size:12px;white-space:nowrap}
+main{display:contents}
+main>section:first-child{grid-area:wheel;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+#wheel{width:min(calc(100vh - 78px),calc(100dvh - 78px),40vw)}
+#powers{margin-top:4px;gap:4px;justify-content:center;flex-wrap:nowrap}
+#powers button{padding:4px 6px;font-size:11px;white-space:nowrap}
+main>section:last-child{grid-area:stats}
+main>section:last-child .box{margin:0;padding:3px 8px}
+main>section:last-child .box:nth-child(2){display:none}
+.stats b{display:inline;font-size:15px;margin-right:4px}
+.stats small{font-size:11px}
+#dealer{grid-area:dealer;margin:0;padding:3px 8px;font-size:12px;min-height:0;min-width:0;overflow:hidden;line-height:1.25}
+#say{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#result{margin:0;min-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#eyeLine{margin:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#face{width:44px;height:44px;margin:0 8px 0 0}
+.portrait{width:84px;height:84px;margin-bottom:4px}
+.heatlbl{font-size:11px;margin-top:1px}
+.heattip{font-size:10px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.qm{font-size:10px;padding:0 6px}
+.heattip .full{display:none}.heattip .brief{display:inline}
+.heatbar{height:6px;margin-top:2px}
+#lower{grid-area:lower;margin:0;min-height:0;overflow:auto}
+.felt{padding:6px;border-width:1px}
+.chips,.row{margin-bottom:5px;gap:5px}
+.chips button,.row button{padding:3px 8px;font-size:12px}
+.row{margin:5px 0 0 !important}
+button.big{font-size:14px;padding:6px 12px}
+.board{--rh:34px;margin-bottom:5px}
+.board .spot .l{font-size:13px}
+.board .spot .stake,.board .oc{font-size:9px;padding:0 3px}
+.spot .l{font-size:14px;display:inline}
+.spot small{font-size:10px}
+.oc{margin:0;font-size:11px;padding:0 4px}
+.hot{width:17px;height:17px;font-size:9px}
+.hot::after{width:5px;height:5px}
+.outs,body.fs .outs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px}
+body.fs .fsinfo span{display:inline;margin-left:10px}
+body.fs .board .spot .stake,body.fs .board .oc{font-size:11px}
+.outs .spot{min-height:0;padding:3px 1px}
+.outs .luckspot{grid-column:span 2}
+.outs .spot .l{font-size:10px;display:block;white-space:nowrap}
+.outs .spot small{font-size:8px;white-space:nowrap}
+.outs .oc{font-size:8px;padding:0 2px;margin:1px auto 0;white-space:nowrap}
+.outs .spot .stake{top:-5px;right:-2px;font-size:10px;padding:0 4px}
+.felt>.hint,.row .hint{display:none}
+.shop{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px;margin-bottom:5px}
+.card{padding:6px;font-size:11px}
+.card b{font-size:13px}
+h3{font-size:13px;margin-bottom:3px}
+.modal{padding:12px;max-height:94vh;overflow:auto}
+.modal h1{font-size:20px}
+.modal p{margin:6px 0;font-size:13px}
+.chips{flex-wrap:nowrap;overflow-x:auto}
+.chips>span:first-child{display:none}
+.chips button{white-space:nowrap}
+.outs .spot{min-width:0;overflow:visible}
+.felt>.act{padding:4px 0 2px}
+}
+@media (orientation:landscape) and (max-height:350px){
+#say{-webkit-line-clamp:1}
+.board{--rh:29px}
+.hot{width:15px;height:15px}
+.chips button,.row button{padding:2px 6px;font-size:11px}
+button.big{font-size:13px;padding:4px 10px}
+.outs .spot{padding:1px}
+#wheel{width:min(calc(100vh - 70px),calc(100dvh - 70px),40vw)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="place">The Dusty Coin Saloon</h1>
+    <span id="nightLbl"></span><span class="sp"></span>
+    <button data-act="mods" id="modBtn">Modifiers</button>
+    <button data-act="items" id="itemsBtn" class="on">Items</button>
+    <button data-act="fast" id="fastBtn">Fast spins: off</button>
+    <button data-act="mute" id="muteBtn">Sound: on</button>
+  </header>
+  <div id="dealer"><div id="face"></div><div id="say"></div><div id="result"></div><div id="eyeLine"></div><div id="heatBox"></div></div>
+  <main>
+    <section>
+      <svg id="wheel" viewBox="-200 -200 400 400"></svg>
+      <div id="powers"></div>
+    </section>
+    <section>
+      <div class="box"><div class="stats" id="stats"></div></div>
+      <div class="box"><h3>Relics</h3><div id="relics"></div></div>
+    </section>
+  </main>
+  <section id="lower"></section>
+</div>
+<div id="tent"></div>
+<div id="banner"></div>
+<div id="overlay"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const ORDER=[0,7,12,3,2,9,6,1,10,5,8,11,4];
+const ZLAB={0:'0',100:'00',200:'000',300:'0000'};
+const lab=v=>ZLAB[v]||String(v);
+const plab=p=>p.void?'◉':lab(p.num);
+const pct=x=>{const v=x*100;return (v>0&&v<10?v.toFixed(1):Math.round(v))+'%';};
+const mk=n=>({num:n,color:ZLAB[n]?'green':RED.has(n)?'red':'black',gold:false,goldHits:0,void:false});
+const mkVoid=()=>({num:-1,color:'void',gold:false,void:true});
+const TOLLS=[60,120,240,480,960,1920,3840,7680];
+const GLYPHS=['⍟','◬','⌖','☍','⟁','ψ','∴','⌬'];
+const PLACES=['The Dusty Coin Saloon','The Dusty Coin Saloon','The Dusty Coin Saloon?','The Du ty C in Sal on','The D●sty C●in','The Coin','THE MOUTH','THE HOUSE'];
+const LINES=[
+ "Evenin', stranger. House rules are simple. Cover your tab by closing time and you walk out the door.",
+ "Back again. The wheel likes you. It don't like many.",
+ "Funny. I don't recall this saloon havin' a cellar. You hear that hummin' too?",
+ "Don't mind the dark pocket. It was always there. It was always there.",
+ "The piano's been playin' since before the town was built. Nobody sits at it.",
+ "You keep callin' me Silas. Silas was the first tab I ever collected.",
+ "THE WHEEL IS A MOUTH AND THE NUMBERS ARE TEETH. Place your bets.",
+ "No more saloon. No more desert. Only the House, and what you owe It."
+];
+const RELICS=[
+ {id:'horseshoe',name:'Rusty Horseshoe',base:60,desc:'Even-money bets (color, odd/even, low/high) pay 25% more.'},
+ {id:'snake',name:'Snake Oil',base:30,desc:'One losing spin each night refunds half of what you lost.'},
+ {id:'tooth',name:'Gold Tooth',base:40,desc:'Gold pockets multiply a win by 1 more (x3 instead of x2).'},
+ {id:'deadman',name:"Dead Man's Hand",base:35,desc:'Straight bets on 1 and 8 pay 30% more.'},
+ {id:'longshot',name:'The Long Shot',base:40,desc:'Straight number bets pay 20% more.'},
+ {id:'undertaker',name:"Undertaker's Ledger",base:45,desc:"+2% payouts for every pocket your wheel is smaller than the House's wheel."},
+ {id:'reach',name:'Long Reach',base:40,desc:'Your Nudge can move the ball 1 pocket further.'},
+ {id:'pull',name:'Mother Lode',base:40,desc:'Your Magnet pulls harder: +3 to its strength.'},
+ {id:'heavy',name:'Heavy Hands',base:45,desc:'Pry Bar, Branding Iron and Paint Bucket can each be used on 1 more pocket of your choice.'},
+ {id:'preacher',name:"Preacher's Coin",base:30,desc:'When the ball lands on a zero, every bet on the table pays 1 to 1.'},
+ {id:'streak',name:'Hot Streak',base:45,desc:'Each winning spin in a row adds +10% to payouts, up to 5 in a row. A losing spin resets it.'},
+ {id:'deed',name:'Claim Deed',base:40,u:true,desc:"After paying the tab, earn 15% interest on the chips you have left, up to a quarter of that night's tab."},
+ {id:'watch',name:'Stopped Pocket Watch',base:50,desc:'+1 spin every night.'},
+ {id:'felt',name:'The Thing in the Felt',base:70,cosmic:true,u:true,desc:'Void pockets no longer devour your bets. When a ball lands in one, every bet comes back to you.'},
+ {id:'unwritten',name:'The Unwritten Square',base:55,cosmic:true,u:true,desc:'A new square appears on the table. It lets you bet on the Void pockets, 2 to 1.'},
+ {id:'eye',name:'The Eye That Counts',base:65,cosmic:true,u:true,desc:'Zeros count as both red and black.'},
+ {id:'noneuclid',name:'Non-Euclidean Wheel',base:70,cosmic:true,u:true,desc:'The pocket directly across from the ball also pays out, at half the winnings.'},
+ {id:'hunger',name:'The Hunger',base:55,cosmic:true,desc:'Each night it devours a random pocket and grants +10% payouts forever.'}
+];
+const TOOLS={
+ pry:{name:'Pry Bar',base:14,desc:'Rip one pocket out of the wheel for good.',target:true},
+ brand:{name:'Branding Iron',base:16,desc:'Duplicate a pocket\'s number and color. Gold does not copy. Each one you buy makes the next cost 1.5 times as much.',target:true},
+ paint:{name:'Paint Bucket',base:8,desc:'Flip a pocket between red and black.',target:true},
+ gild:{name:'Gold Leaf',base:18,desc:'Gild a pocket. Wins that land there pay double. The gold flakes off after 3 hits.',target:true},
+ door:{name:'Open a Door',base:6,desc:'Turn a pocket into a Void. Why would you do that?',target:true,cosmic:true},
+ sball:{name:'Spare Ball',base:10,desc:'One Extra Ball charge. Used up when you spin it.'},
+ smag:{name:'Lodestone Chip',base:8,desc:'One Magnet charge. Used up when you spin with it.'},
+ snudge:{name:'Marked Card',base:12,desc:'One Nudge charge. Used up when you nudge.'}
+};
+let G;
+let DB=null,dbQ=Promise.resolve(),dbTries=0;
+(function getDb(){try{if(window.claude&&window.claude.use){window.claude.use('db').then(d=>{DB=d||null;}).catch(()=>{});return;}}catch(e){}
+  if(++dbTries<20)setTimeout(getDb,500);})();
+function wheelSum(){const cn={};G.wheel.forEach(p=>{if(!p.void)cn[p.num]=(cn[p.num]||0)+1;});const miss=[],dup=[];G.zeros.concat(Array.from({length:G.N},(_,i)=>i+1)).forEach(v=>{if(!cn[v])miss.push(lab(v));else if(cn[v]>1)dup.push(lab(v)+'x'+cn[v]);});
+  return{size:G.wheel.length,house:G.house,table:G.N,voids:G.wheel.filter(p=>p.void).length,gold:G.wheel.filter(p=>p.gold).map(plab),removed:miss,dupes:dup,red:G.wheel.filter(p=>p.color==='red').length,black:G.wheel.filter(p=>p.color==='black').length,green:G.wheel.filter(p=>p.color==='green').length};}
+/* Playtest reporting: when SHEET_URL is set, each run is posted there (a Google Sheet collector). */
+const SHEET_URL='https://script.google.com/macros/s/AKfycbz-00h_6vyQpgY7xTUgFRVBor7oLyUenCy5mbZ_eWBOP13RMBqUyYzvnIzAQ0vLV-gdBA/exec';
+const SAVE_KEY='dmw_save',NAME_KEY='dmw_name',SAVE_V=1;
+const store={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
+const HAS_LS=(()=>{try{return typeof localStorage!=='undefined'&&!!localStorage;}catch(e){return false;}})();
+const playerName=()=>store.get(NAME_KEY)||'';
+let sentAt='';
+function postRun(leaving){
+  if(!SHEET_URL||!G||!G.log||!G.log.startRelic)return;const L=G.log;if(sentAt===L.updated)return;
+  let body;try{body=JSON.stringify(L);}catch(e){return;}sentAt=L.updated;
+  try{
+    if(leaving&&body.length<60000&&navigator.sendBeacon&&navigator.sendBeacon(SHEET_URL,new Blob([body],{type:'text/plain;charset=utf-8'})))return;
+    fetch(SHEET_URL,{method:'POST',mode:'no-cors',keepalive:body.length<60000,headers:{'Content-Type':'text/plain;charset=utf-8'},body}).catch(()=>{});
+  }catch(e){}
+}
+function saveGame(){
+  if(!G||!HAS_LS)return;
+  if(G.mode==='over'){store.del(SAVE_KEY);return;}
+  if(G.mode!=='bet'&&G.mode!=='shop'&&G.mode!=='closing')return;
+  if(!G.log||!G.log.startRelic)return;
+  try{store.set(SAVE_KEY,JSON.stringify({v:SAVE_V,at:Date.now(),g:G}));}catch(e){}
+}
+function loadSave(){
+  try{const d=JSON.parse(store.get(SAVE_KEY)||'null');if(!d||d.v!==SAVE_V||!d.g||!d.g.log||!Array.isArray(d.g.wheel)||!d.g.wheel.length)return null;
+    if(!['bet','shop','closing'].includes(d.g.mode))return null;return d.g;}catch(e){return null;}
+}
+function resumeGame(){
+  const g=loadSave();if(!g){pickStart();return;}
+  G=g;G.armed=G.mode==='shop'?G.armed:null;G.fsHold=false;G.log.resumes=(G.log.resumes||0)+1;sentAt='';
+  $('overlay').className='';say('You sit back down. Night '+G.night+', '+fmt(G.chips)+' chips.');applyDread();render();
+}
+function askName(then){
+  const o=$('overlay');o.className='show';
+  o.innerHTML='<div class="modal"><div class="portrait">'+dealerSVG(1)+'</div><h3>Silas opens a ledger and wets his pencil.</h3><p>"Name?"</p>'+
+   '<input id="nameIn" maxlength="16" autocomplete="off" placeholder="Your name" style="width:100%;font:inherit;font-size:18px;padding:10px;margin:6px 0 12px;border-radius:8px;border:1px solid var(--edge);background:#0006;color:var(--ink)">'+
+   '<button class="big" data-act="name" data-then="'+then+'">Sign the ledger</button></div>';
+  const i=$('nameIn');i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();setName(then);}});
+}
+function setName(then){
+  const i=$('nameIn');let n=(i?i.value:'').replace(/[<>&"']/g,'').trim().slice(0,16);if(!n)n='Stranger';store.set(NAME_KEY,n);
+  then==='resume'?resumeGame():pickStart();
+}
+function logRun(status,send){
+  if(!G||!G.log)return;const L=G.log;L.player=playerName();
+  if(status)L.status=status;L.updated=new Date().toISOString();L.night=G.night;L.chips=G.chips;L.relics=G.relics.slice();L.charges={...G.charges};L.wheel=wheelSum();
+  saveGame();if(status||send)postRun();
+  if(!DB)return;let data;try{data=JSON.parse(JSON.stringify(L));}catch(e){return;}
+  dbQ=dbQ.then(()=>DB.doc('runs/'+L.id).set(data)).catch(()=>{});
+}
+function runText(){const L=G.log;if(!L)return '';return JSON.stringify(L);}
+
+const has=id=>G.relics.includes(id);
+const cnt=id=>G.relics.filter(x=>x===id).length;
+const magStr=()=>4+3*cnt('pull'),reach=()=>1+cnt('reach'),span=()=>1+cnt('heavy');
+const rdesc=r=>r.desc+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks.</i>');
+const toll=()=>TOLLS[G.night-1]+(G.tabAdd||0);
+const r5=x=>Math.max(5,Math.round(x/5)*5);
+const price=b=>r5(b*TOLLS[G.night-1]/60);
+const toolPrice=k=>k==='brand'?r5(price(TOOLS.brand.base)*Math.pow(1.5,G.brands||0)):price(TOOLS[k].base);
+const dread=()=>(G.night-1)/7;
+
+function newGame(){
+  G={night:1,chips:150,relics:[],charges:{nudge:2,magnet:1,ball:0},bets:{},last:null,spins:0,streak:0,hunger:0,
+     snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
+     fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},msg:'',res:'',hits:[],
+     wheel:ORDER.map(mk)};
+  G.log={id:'r'+Date.now().toString(36),version:'v31',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+}
+
+/* ---------- audio ---------- */
+let AC=null,muted=false,droneG=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){AC=null;}}return AC;}
+function beep(f,d,type,v){if(muted)return;const a=ac();if(!a)return;try{const o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(v||0.07,a.currentTime);g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d);}catch(e){}}
+function setDrone(){const a=ac();if(!a)return;try{if(!droneG){droneG=a.createGain();droneG.gain.value=0;droneG.connect(a.destination);[41,43.5,82.7].forEach(f=>{const o=a.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(droneG);o.start();});}
+  const d=dread();droneG.gain.setTargetAtTime(muted?0:Math.max(0,d-0.2)*0.03,a.currentTime,1.5);}catch(e){}}
+const sfx={tick:()=>beep(1400,0.03,'square',0.025),win:()=>{beep(660,0.15);setTimeout(()=>beep(880,0.2),110);setTimeout(()=>beep(1320,0.3),230);},
+  lose:()=>beep(110,0.4,'sawtooth',0.06),buy:()=>beep(520,0.12,'triangle'),bad:()=>beep(160,0.15,'square',0.04),chip:()=>beep(900,0.05,'triangle',0.04)};
+
+/* ---------- rules ---------- */
+function numsOf(k){const c=k[0];if(c==='n')return[+k.slice(1)];if(c==='s'||c==='c')return k.slice(1).split('_').map(Number);return null;}
+function deadBet(k){const ns=numsOf(k);return !!ns&&!G.wheel.some(p=>!p.void&&ns.includes(p.num));}
+const rowOf=n=>2-((n-1)%3),colOf=n=>Math.ceil(n/3);
+function baseOdds(k){
+  const N=G.N,c=k[0];
+  if(c==='n'){const v=+k.slice(1);let o=N-1;if(has('longshot'))o=Math.round(o*(1+0.2*cnt('longshot')));if(has('deadman')&&(v===1||v===8))o=Math.round(o*(1+0.3*cnt('deadman')));return o;}
+  if(c==='s')return N/2-1;
+  if(c==='c')return N/4-1;
+  if(c==='t'||c==='k')return 2;
+  if(k==='void')return 2;
+  return 1+0.25*cnt('horseshoe');
+}
+function matches(k,p){
+  if(p.void)return k==='void';
+  const v=p.num,N=G.N;
+  if(k[0]==='n')return v===+k.slice(1);
+  if(k[0]==='s'||k[0]==='c')return numsOf(k).includes(v);
+  if(k==='void')return false;
+  if(k==='red'||k==='black')return p.color===k||(has('eye')&&p.color==='green');
+  if(v<=0||v>N)return false;
+  if(k==='odd')return v%2===1; if(k==='even')return v%2===0;
+  if(k==='low')return v<=N/2; if(k==='high')return v>N/2;
+  if(k==='t1')return v<=N/3; if(k==='t2')return v>N/3&&v<=2*N/3; if(k==='t3')return v>2*N/3;
+  if(k==='k1')return v%3===1; if(k==='k2')return v%3===2; if(k==='k3')return v%3===0;
+  return false;
+}
+function hitOdds(k,p){
+  if(p.void)return k==='void'?baseOdds(k):0;
+  if(matches(k,p))return baseOdds(k);
+  if(p.color==='green'&&has('preacher'))return cnt('preacher');
+  return 0;
+}
+function mult(p){
+  let m=p.gold?2+cnt('tooth'):1;
+  m*=1+0.1*cnt('streak')*Math.min(G.streak,5);
+  m*=1+0.1*G.hunger;
+  m*=1+0.02*cnt('undertaker')*Math.max(0,G.house-G.wheel.length);
+  if(G.cold)m*=0.5;
+  return m;
+}
+function payout(hits){
+  let staked=0,back=0;
+  for(const [k,st] of Object.entries(G.bets)){
+    staked+=st;if(k==='luck')continue;let win=0,keep=false;
+    hits.forEach(h=>{const p=G.wheel[h.i],o=hitOdds(k,p);if(o>0){if(h.w===1)keep=true;if(!(h.w===1&&G.watch.includes(h.i)))win+=st*o*mult(p)*h.w;}else if(p.void&&h.w===1&&has('felt'))keep=true;});
+    back+=(keep?st:0)+Math.round(win);
+  }
+  return{staked,back};
+}
+function hitsFor(i){const n=G.wheel.length,h=[{i,w:1}];if(has('noneuclid'))h.push({i:(i+Math.floor(n/2))%n,w:0.5});return h;}
+function pinfo(p,i){
+  const lk=G.lucky.includes(i)?' Starred: chips on Lucky Draw win an item if the ball lands here.':'';
+  const eye=lk+(G.watch.includes(i)?' The Eye is watching this pocket right now: a ball that lands here pays nothing.':'');
+  if(p.void)return 'Void pocket. '+(has('felt')?'With The Thing in the Felt, a ball here gives every bet back.':'A ball that lands here swallows every bet on the table.')+(has('unwritten')?' Your Void square pays 2 to 1 on it.':'')+eye;
+  let t=lab(p.num)+' '+p.color+'.';
+  if(p.color==='green')t+=' A zero. It loses every bet except a straight bet on it'+(has('preacher')?", but your Preacher's Coin makes it pay every bet "+cnt('preacher')+' to 1':'')+'.'+(has('eye')?' The Eye That Counts makes it count as red and black.':'')+(G.night>=3?' Landing on it also draws a random curse from the House.':' From night 3, landing on a zero also draws a random curse from the House.');
+  if(p.gold)t+=' Gold: wins that land here pay x'+(2+cnt('tooth'))+'. The gold flakes off after '+(3-(p.goldHits||0))+' more hit'+(3-(p.goldHits||0)===1?'':'s')+'.';
+  const c=G.wheel.filter(q=>!q.void&&q.num===p.num).length;if(c>1)t+=' There are '+c+' of these on the wheel.';
+  return t+eye;
+}
+function outcome(i){const r=payout(hitsFor(i));return r.back-r.staked;}
+const short=v=>{const a=Math.abs(v);return(v>0?'+':v<0?'-':'')+(a>=1e6?(a/1e6).toFixed(1)+'m':a>=1e4?(a/1e3).toFixed(1)+'k':fmt(a));};
+const oc=(v,c)=>c?'<span class="oc c">caught</span>':'<span class="oc '+(v>0?'w':v<0?'l':'')+'">'+short(v)+'</span>';
+const chance=k=>G.wheel.filter(p=>hitOdds(k,p)>0).length/G.wheel.length;
+const oddsTxt=k=>(Math.round(baseOdds(k)*100)/100)+':1';
+const totalBets=()=>Object.values(G.bets).reduce((a,b)=>a+b,0);
+const perNight=k=>0;
+const pname=p=>p.void?'the Void':(lab(p.num)+' '+p.color+(p.gold?' (gold)':''));
+
+/* ---------- flow ---------- */
+function say(t){G.msg=t;}
+const HEAT={early:2,free:1,bet:25,win:5,winEarly:10,winFree:2,cool:10,lose:5,mag:12,nudge:8,ball:8,tamper:8,streak:5};
+const heatOn=()=>true;
+const freeMult=()=>G.night<=2?HEAT.early:HEAT.free;
+const winMult=()=>G.night<=2?HEAT.winEarly:HEAT.win;
+const winFreeChips=()=>r5(TOLLS[G.night-1]*HEAT.winFree);
+const winHeat=net=>Math.max(0,net/TOLLS[G.night-1]-HEAT.winFree)*winMult();
+const heatFree=()=>Math.max(5,Math.floor(TOLLS[G.night-1]*freeMult()/5)*5);
+const betHeat=total=>Math.max(0,(total/TOLLS[G.night-1]-freeMult())*HEAT.bet);
+const streakHeat=net=>net>0&&G.streak>=2?HEAT.streak*(G.streak-1):0;
+const heatLine=()=>G.heat<75?74:99;
+const heatNext=(up,st,down)=>{let h=G.heat+up;if(st)h=up>0?h+st:Math.max(h,Math.min(h+st,heatLine()));return Math.max(0,Math.round(h-down));};
+const locked=()=>heatOn()&&G.heat>=75;
+const heatPlan=()=>betHeat(totalBets())+(G.magnet>=0?HEAT.mag:0)+HEAT.ball*Math.min(G.useBall,G.charges.ball,3);
+const doctored=p=>!!p&&!p.void&&(p.gold||G.wheel.filter(q=>!q.void&&q.num===p.num).length>1);
+function heatIf(i){
+  if(!heatOn()||!G.wheel[i])return 0;
+  const net=outcome(i),p=G.wheel[i],sp=G.spinInfo||{};let up,trick=doctored(p);
+  if(G.mode==='nudge'){const stay=G.balls.some(b=>b.idx===i);up=betHeat(totalBets())+(sp.magnet?HEAT.mag:0)+HEAT.ball*(G.balls.length-1)+(stay?0:HEAT.nudge);if(!stay||sp.nudged||sp.magIdx===i)trick=true;}
+  else{up=heatPlan();if(G.magnet===i)trick=true;}
+  if(net>0){if(trick)up+=winHeat(net);if(doctored(p))up+=HEAT.tamper;}
+  const st=streakHeat(net);let down=0;if(up===0&&!st)down+=HEAT.cool;if(net<0)down+=HEAT.lose;
+  return heatNext(up,st,down);
+}
+const wouldCatch=i=>heatOn()&&outcome(i)>0&&heatIf(i)>=100;
+function moveEye(center){
+  const n=G.wheel.length;if(G.night<4||n<6){G.watch=[];return;}
+  const c=Math.max(2,Math.round(n*0.1));
+  if(center==null||center<0||center>=n)center=Math.floor(Math.random()*n);
+  const start=((center-Math.floor(c/2))%n+n)%n;G.watch=Array.from({length:c},(_,j)=>(start+j)%n);
+}
+function moveLucky(){const n=G.wheel.length;if(n<6){G.lucky=[];return;}const c=Math.max(3,Math.round(n*0.25)),st=Math.floor(Math.random()*n);G.lucky=Array.from({length:c},(_,j)=>(st+j)%n);}
+const luckSteps=()=>{const t=TOLLS[G.night-1];return[Math.max(5,r5(t*0.05)),r5(t*0.25),r5(t*0.6)];};
+const luckTier=st=>{const s=luckSteps();return st>=s[2]?3:st>=s[1]?2:st>=s[0]?1:0;};
+const TIERN=['','a power charge','a relic','a rare relic and a power charge'];
+function grantItem(tier){
+  const ch=()=>{const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)];G.charges[k]++;return k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';};
+  if(tier===1)return{name:'1 '+ch()+' charge',desc:'A one-time power charge.'};
+  const cos=G.night>=4;let pool=RELICS.filter(r=>!(r.u&&has(r.id))&&(!r.cosmic||cos));
+  if(tier===2)pool=pool.filter(r=>!r.u&&!r.cosmic);
+  else{const rare=pool.filter(r=>r.u||r.cosmic||r.base>=45);if(rare.length)pool=rare;}
+  const r=pool[Math.floor(Math.random()*pool.length)];G.relics.push(r.id);
+  if(tier===3){const c=ch();return{name:r.name+' and 1 '+c+' charge',desc:r.desc};}
+  return{name:r.name,desc:r.desc};
+}
+const luckyNames=()=>[...new Set(G.lucky.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
+const watchNames=()=>[...new Set(G.watch.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
+const dealerName=()=>G.night<=5?'Silas':G.night===6?'Silas?':G.night===7?'The Dealer':'THE HOUSE';
+
+/* ---------- placeholder dealer portrait: skeleton cowboy to eldritch thing, stages 1 to 8 ---------- */
+function dealerSVG(stage){
+  const s=Math.max(1,Math.min(8,stage|0)),t=(s-1)/7,L=(a,b)=>lerpHex(a,b,t),f=v=>v.toFixed(1);
+  const bg=L('#6b4423','#0d0720'),bone=s<5?L('#f6edd6','#dfe3c4'):L('#e9e2c8','#7fb3a2'),boneSh=L('#cdbf9c','#3f6f6a');
+  const hat=L('#5a3418','#1d1238'),hatSh=L('#3b2110','#0c0620'),band=L('#2a1a10','#5b2bd0'),cloth=L('#b3261e','#3a0f4a'),poncho=L('#7b3f1d','#150c2c');
+  const glow=s<3?'#ffffff':s===3?'#ffb347':s<7?'#b06bff':'#5dffd0',dark=L('#1b1210','#05010a');
+  const drop=[0,1,3,5,11,17,25,34][s-1],grow=[0,0,1,3,6,10,15,22][s-1],nT=[0,0,0,0,2,4,7,11][s-1];
+  let o='<svg class="face" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="fc'+s+'"><circle cx="100" cy="100" r="96"/></clipPath></defs><g clip-path="url(#fc'+s+')">';
+  o+='<rect width="200" height="200" fill="'+bg+'"/>';
+  if(s>=6)[[24,30],[168,24],[182,92],[16,104],[150,150],[40,160],[120,12],[70,20]].slice(0,(s-5)*3).forEach((q,i)=>{o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+(i%2?1.2:1.8)+'" fill="#d9d2ff" opacity=".8"/>';});
+  // tentacles behind the head
+  const tc=L('#8a7f9a','#2fbf9a'),tc2=L('#5c5470','#157a6a');
+  for(let i=0;i<nT;i++){const a=(s<8?(205+130*(nT===1?0.5:i/(nT-1))):(20+320*i/nT))*Math.PI/180,w=(i%2?0.45:-0.45);
+    const x0=100+Math.cos(a)*34,y0=112+Math.sin(a)*34,x1=100+Math.cos(a+w)*74,y1=112+Math.sin(a+w)*74,x2=100+Math.cos(a-w*0.6)*104,y2=112+Math.sin(a-w*0.6)*104;
+    o+='<path d="M'+f(x0)+' '+f(y0)+'Q'+f(x1)+' '+f(y1)+' '+f(x2)+' '+f(y2)+'" fill="none" stroke="'+tc2+'" stroke-width="'+(11+s*0.6)+'" stroke-linecap="round"/><path d="M'+f(x0)+' '+f(y0)+'Q'+f(x1)+' '+f(y1)+' '+f(x2)+' '+f(y2)+'" fill="none" stroke="'+tc+'" stroke-width="'+(6+s*0.4)+'" stroke-linecap="round"/>';}
+  // shoulders, poncho, bandana
+  o+='<path d="M22 204Q30 150 100 150Q170 150 178 204Z" fill="'+poncho+'"/><path d="M40 190Q100 168 160 190" fill="none" stroke="'+L('#d9a441','#7df0c8')+'" stroke-width="3" opacity=".7"/>';
+  o+='<path d="M60 148Q100 172 140 148L130 170Q100 188 70 170Z" fill="'+cloth+'"/><path d="M92 176L100 198L108 176Z" fill="'+cloth+'"/>';
+  // mouth cavity, lower jaw
+  o+='<ellipse cx="100" cy="'+f(136+drop/2)+'" rx="'+(29+s)+'" ry="'+f(7+drop/2)+'" fill="'+L('#2a0a0a','#1a0033')+'"/>';
+  if(s>=7)o+='<ellipse cx="100" cy="'+f(138+drop/2)+'" rx="12" ry="'+f(drop/3)+'" fill="#000"/>';
+  o+='<g transform="translate(0 '+drop+')"><path d="M69 131Q100 143 131 131L125 151Q100 162 75 151Z" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="2"/>';
+  for(let i=0;i<7;i++){const x=76+i*8;o+=s>=4?'<path d="M'+x+' 136L'+(x+3)+' '+(126-s)+'L'+(x+6)+' 136Z" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="1"/>':'<rect x="'+x+'" y="130" width="6" height="7" rx="1.5" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="1"/>';}
+  o+='</g>';
+  // skull
+  o+='<path d="M58 98a42 44 0 1 1 84 0L134 128Q100 140 66 128Z" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="2.5"/>';
+  for(let i=0;i<8;i++){const x=72+i*7;o+=s>=4?'<path d="M'+x+' 128L'+(x+3)+' '+(140+s)+'L'+(x+6)+' 128Z" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="1"/>':'<rect x="'+x+'" y="126" width="6" height="8" rx="1.5" fill="'+bone+'" stroke="'+boneSh+'" stroke-width="1"/>';}
+  if(s>=7)for(let i=0;i<6;i++){const x=79+i*7;o+='<path d="M'+x+' 131L'+(x+2.5)+' '+(137+s)+'L'+(x+5)+' 131Z" fill="'+boneSh+'"/>';}
+  if(s>=3)o+='<path d="M118 60l-5 9 6 6-4 9" fill="none" stroke="'+dark+'" stroke-width="1.6"/>';
+  if(s>=5)o+='<path d="M72 84l6 5-3 7 5 6M128 112l-6 4 4 6" fill="none" stroke="'+dark+'" stroke-width="1.4"/>';
+  // sockets and pupils
+  const eye=(x,y,r,open)=>{let e='<ellipse cx="'+x+'" cy="'+y+'" rx="'+r+'" ry="'+f(r*0.72*open)+'" fill="'+(s>=7?'#e9ffd0':'#efe6c8')+'" stroke="'+dark+'" stroke-width="1.5"/>';
+    if(open>0.4)e+='<circle cx="'+x+'" cy="'+y+'" r="'+f(r*0.5)+'" fill="'+(s>=7?'#12a37f':'#6a2bd9')+'"/><ellipse cx="'+x+'" cy="'+y+'" rx="'+f(r*0.14)+'" ry="'+f(r*0.5)+'" fill="#000"/>';return e;};
+  [[82,101],[118,101]].forEach((q,i)=>{const rx=11+(s>=6?2:0),ry=12+(s>=6?3:0);
+    o+='<ellipse cx="'+q[0]+'" cy="'+q[1]+'" rx="'+rx+'" ry="'+ry+'" fill="'+dark+'"/>';
+    if(s>=4)o+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+(6+s*0.6)+'" fill="'+glow+'" opacity=".28"/>';
+    const pr=s<3?3:s===3?3.6:4.6+(s>=7?1.5:0);o+='<circle cx="'+(q[0]+(s===2&&i?1:0))+'" cy="'+q[1]+'" r="'+(s===2&&i?pr+1:pr)+'" fill="'+glow+'"/>';
+    if(s>=5)o+='<ellipse cx="'+q[0]+'" cy="'+q[1]+'" rx="1.4" ry="'+(pr-0.4)+'" fill="#000"/>';});
+  if(s<7)o+='<path d="M100 111l-5 10q5 3 10 0z" fill="'+dark+'"/>';
+  if(s>=4&&s<8)o+=eye(100,79,s>=6?9:7,s===4?0.55:1);
+  if(s>=6&&s<8)o+=eye(84,72,5.5,1)+eye(116,72,5.5,1);
+  if(s===8)o+=eye(100,84,17,1)+eye(74,74,6,1)+eye(126,74,6,1)+eye(100,118,6,1);
+  // hat
+  if(s>=6){const h=10+(s-6)*9;o+='<path d="M72 34Q'+(54-h/2)+' '+(18-h/2)+' '+(46-h/2)+' '+(2-h)+'Q62 '+(8-h/3)+' 82 26Z" fill="'+hatSh+'" stroke="'+dark+'" stroke-width="1.5"/><path d="M128 34Q'+(146+h/2)+' '+(18-h/2)+' '+(154+h/2)+' '+(2-h)+'Q138 '+(8-h/3)+' 118 26Z" fill="'+hatSh+'" stroke="'+dark+'" stroke-width="1.5"/>';}
+  const top=18-grow;
+  o+='<path d="M20 60Q28 40 60 50L140 50Q172 40 180 60Q142 76 100 76Q58 76 20 60Z" fill="'+hat+'" stroke="'+hatSh+'" stroke-width="2.5"/>';
+  o+='<path d="M62 56Q58 '+top+' 84 '+(top+2)+'Q100 '+(top+12)+' 116 '+(top+2)+'Q142 '+top+' 138 56Q100 66 62 56Z" fill="'+hat+'" stroke="'+hatSh+'" stroke-width="2.5"/>';
+  o+='<path d="M62 54Q100 64 138 54L138 45Q100 55 62 45Z" fill="'+band+'"/>';
+  if(s<3)o+='<path d="M100 47l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="#d9a441"/>';
+  if(s>=3)o+=eye(100,52,s>=5?6:4.5,s===3?0.35:1);
+  if(s>=7)o+=eye(78,52,4.5,1)+eye(122,52,4.5,1);
+  if(s===8)o+=eye(44,60,5,1)+eye(156,60,5,1);
+  if(s>=7)[[84,10],[104,4],[118,12]].forEach((q,i)=>{const y=138+drop+i*3;o+='<path d="M'+q[0]+' '+y+'q-2 '+q[1]+' 0 '+(q[1]+6)+'q3 -5 0 -'+(q[1]+6)+'z" fill="#5dffd0" opacity=".85"/>';});
+  o+='</g><circle cx="100" cy="100" r="96" fill="none" stroke="'+L('#d9a441','#7df0c8')+'" stroke-width="4"/></svg>';
+  return o;
+}
+function dealerSay(lines,btn,title){
+  const o=$('overlay');
+  o.innerHTML='<div class="modal dlg"><div class="portrait">'+dealerSVG(G.night)+'</div><h3>'+(title||dealerName())+'</h3>'+lines.filter(Boolean).map(t=>'<p>'+t+'</p>').join('')+'<button class="big" data-act="closeItems">'+(btn||'Continue')+'</button></div>';
+  o.className='show';
+}
+const CURSES=[
+ {id:'cut',ok:()=>G.chips>=20,run:()=>{const c=Math.max(5,Math.round(G.chips*0.1));G.chips-=c;return 'The House takes a cut. You lose '+fmt(c)+' chips.';}},
+ {id:'void',ok:()=>true,run:()=>{G.wheel.splice(Math.floor(Math.random()*(G.wheel.length+1)),0,mkVoid());G.house++;return 'A dark pocket opens in the wheel.';}},
+ {id:'charge',ok:()=>G.charges.nudge+G.charges.magnet+G.charges.ball>0,run:()=>{const ks=['nudge','magnet','ball'].filter(k=>G.charges[k]>0),k=ks[Math.floor(Math.random()*ks.length)];G.charges[k]--;return 'Something reaches into your coat. You lose one '+(k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge')+' charge.';}},
+ {id:'tab',ok:()=>true,run:()=>{const a=r5(TOLLS[G.night-1]*0.15);G.tabAdd=(G.tabAdd||0)+a;return "Tonight's tab goes up by "+fmt(a)+' chips.';}},
+ {id:'tarnish',ok:()=>G.wheel.some(p=>p.gold),run:()=>{const g=G.wheel.filter(p=>p.gold),q=g[Math.floor(Math.random()*g.length)];q.gold=false;return 'The gold flakes off '+pname(q)+'.';}},
+ {id:'zero',ok:()=>true,run:()=>{const z=G.zeros[Math.floor(Math.random()*G.zeros.length)];G.wheel.splice(Math.floor(Math.random()*(G.wheel.length+1)),0,mk(z));G.house++;return 'Another '+lab(z)+' grows on the wheel.';}},
+ {id:'cold',ok:()=>!G.cold,run:()=>{G.cold=true;return 'Your hands go cold. Winnings on your next spin are halved.';}},
+ {id:'spin',ok:()=>G.spins>1,run:()=>{G.spins--;return 'The night gets shorter. You lose one spin.';}}
+];
+function curse(){const c=CURSES.filter(x=>x.ok()),x=c[Math.floor(Math.random()*c.length)];return{id:x.id,text:x.run()};}
+
+function grow(){
+  const add=[],nt=G.night;let msg='';
+  if(nt===3){for(let v=13;v<=24;v++)add.push(mk(v));add.push(mk(100));G.N=24;G.zeros.push(100);msg=' The wheel is bigger tonight. Twelve new numbers, and a second zero. And from tonight the zeros bite: land on one and the House takes something from you.';}
+  if(nt===4){add.push(mkVoid());msg=' A dark pocket has opened in the wheel. If the ball lands in it, it swallows every bet on the table.';}
+  if(nt===5){for(let v=25;v<=36;v++)add.push(mk(v));G.N=36;msg=' The wheel has grown again. Thirty-six numbers now.';}
+  if(nt===6){add.push(mkVoid(),mkVoid());msg=' Two more dark pockets have opened.';}
+  if(nt===7){add.push(mk(200));G.zeros.push(200);for(let j=0;j<12;j++)add.push(mkVoid());msg=' The wheel has outgrown the table. A third zero, and twelve pockets with no number.';}
+  if(nt===8){add.push(mk(300));G.zeros.push(300);for(let j=0;j<24;j++)add.push(mkVoid());msg=' The wheel no longer fits in the room. A fourth zero, and twenty-four more pockets that are not numbers.';}
+  add.forEach(p=>G.wheel.splice(Math.floor(Math.random()*(G.wheel.length+1)),0,p));
+  G.house+=add.length;return msg;
+}
+function startNight(){
+  G.spins=5+cnt('watch');G.fsHold=false;G.snakeUsed=0;G.tabAdd=0;G.bets={};G.balls=[];G.hits=[];G.magnet=-1;G.useBall=0;G.armed=null;
+  for(const k of ['nudge','magnet','ball'])G.charges[k]+=perNight(k);
+  let extra=grow();
+  for(let h=0;h<cnt('hunger');h++){const c=G.wheel.map((p,i)=>p.void?-1:i).filter(i=>i>=0);if(c.length>1&&G.wheel.length>3){const i=c[Math.floor(Math.random()*c.length)];const gone=G.wheel.splice(i,1)[0];G.hunger++;extra+=' The Hunger ate '+pname(gone)+'.';}}
+  if(G.last){for(const k in G.last)if(deadBet(k))delete G.last[k];}
+  G.heat=Math.floor((G.heat||0)/2);moveEye(null);moveLucky();
+  G.mode='bet';G.res='';say(LINES[G.night-1]+extra);applyDread();render();
+  dealerSay([LINES[G.night-1],extra.trim(),G.night===1?'One more thing. I watch for cheats. Win honest and I do not care how much. But bet over '+fmt(heatFree())+' a spin, or use your little tricks, and my Heat climbs. A big win off a trick or a doctored pocket climbs fastest. Win three spins running and I get suspicious too, but a streak alone never crosses a line. Only a trick does that. Fill the meter and I take your winnings, cut your stack down to tonight\'s tab, and keep something you own.':G.night===3?'I am watching closer from tonight. Bets over '+fmt(heatFree())+' a spin draw Heat now.':'',G.night===4?'The Eye has opened. Before every spin it watches a few pockets, marked in violet on the wheel and on the table. A ball that lands on a watched pocket pays nothing.':'','Tonight: '+fmt(toll())+' chips due, '+G.spins+' spins.'],'Place your bets');
+  G.nightStart=G.chips;logRun(null,true);
+}
+function takeBet(k){
+  const st=G.bets[k];if(!st){sfx.bad();return;}
+  const amt=G.chip==='half'?Math.ceil(st/2):G.chip==='all'?st:Math.min(G.chip,st);
+  G.bets[k]=st-amt;if(G.bets[k]<=0)delete G.bets[k];G.chips+=amt;sfx.chip();
+  if(totalBets()<=0)G.remove=false;
+  render();
+}
+function placeBet(k){
+  if(G.mode!=='bet')return;
+  if(G.remove){takeBet(k);return;}
+  if(deadBet(k)){sfx.bad();return;}
+  let amt=G.chip==='half'?Math.floor(G.chips/2):G.chip==='all'?G.chips:G.chip;
+  amt=Math.min(amt,G.chips);if(amt<=0){sfx.bad();return;}
+  G.chips-=amt;G.bets[k]=(G.bets[k]||0)+amt;sfx.chip();
+  if(k==='luck'){const st=luckSteps(),t=luckTier(G.bets.luck);say('Lucky Draw: if the ball lands on a starred pocket ('+luckyNames().join(', ')+', a '+pct(G.lucky.length/G.wheel.length)+' chance) you get an item, not chips. Stake '+fmt(st[0])+' for '+TIERN[1]+', '+fmt(st[1])+' for '+TIERN[2]+', '+fmt(st[2])+' for '+TIERN[3]+'. '+(t?'You are at tier '+t+'.':'You are under the first threshold.')+' The stake is spent either way.');}
+  if(numsOf(k))say((k[0]==='s'?'Split on ':k[0]==='c'?'Corner on ':'Straight on ')+numsOf(k).map(lab).join(', ')+'. Pays '+baseOdds(k)+' to 1 with a '+pct(chance(k))+' chance on this wheel.');
+  render();
+}
+function clearBets(){if(G.mode!=='bet')return;G.chips+=totalBets();G.bets={};G.remove=false;render();}
+function unbet(k){if(G.mode!=='bet'||!G.bets[k])return;G.chips+=G.bets[k];delete G.bets[k];render();}
+function rebet(){
+  if(G.mode!=='bet'||!G.last)return;clearBets();
+  for(const [k,v] of Object.entries(G.last)){const a=Math.min(v,G.chips);if(a>0){G.chips-=a;G.bets[k]=a;}}
+  render();
+}
+function pick(){
+  const w=G.wheel.map((p,i)=>i===G.magnet?magStr():1);let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<w.length;i++){r-=w[i];if(r<0)return i;}return w.length-1;
+}
+function spin(){
+  if(G.mode!=='bet')return;
+  if(totalBets()<=0){say('Silas taps the felt. "Chips on the table first."');sfx.bad();render();return;}
+  G.mode='spinning';G.remove=false;G.fsHold=true;G.spins--;G.last={...G.bets};G.hits=[];G.res='';
+  if(locked()){G.magnet=-1;G.useBall=0;}
+  const nb=1+Math.min(G.useBall,G.charges.ball,3);G.charges.ball-=nb-1;
+  const res=[];for(let j=0;j<nb;j++)res.push(pick());
+  G.spinInfo={magnet:G.magnet>=0,magIdx:G.magnet>=0?G.magnet:null,nudged:false};
+  if(G.magnet>=0)G.charges.magnet--;
+  G.balls=res.map(i=>({idx:i,ang:0,r:181}));
+  render();showWheel();
+  animate(res,()=>{
+    G.magnet=-1;G.useBall=0;
+    if(G.charges.nudge>0&&!locked()){G.mode='nudge';say('The ball settles on '+pname(G.wheel[G.balls[0].idx])+'. You could give the table a little nudge.');render();}
+    else resolve();
+  });
+}
+function animate(res,done){
+  const n=G.wheel.length,seg=360/n,w0=G.wAngle,w1=w0+720+Math.random()*360,dur=G.fast?800:3400,t0=performance.now();
+  const B=res.map((idx,j)=>{const end=w1+(idx+0.5)*seg+(Math.random()-0.5)*seg*0.4;return{end,start:end+360*4+j*200,cell:-1};});
+  const wg=$('wg'),els=res.map((_,j)=>$('b'+j));let lastTick=0;
+  function frame(now){
+    const t=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-t,3);
+    G.wAngle=w0+(w1-w0)*e;if(wg)wg.setAttribute('transform','rotate('+G.wAngle.toFixed(2)+')');upright();
+    B.forEach((b,j)=>{
+      const a=b.start+(b.end-b.start)*e;let r=181;
+      if(t>0.55){const u=(t-0.55)/0.45;r=181-49*(1-Math.pow(1-u,2))+Math.sin(u*18)*4*(1-u);}
+      const [x,y]=polar(r,a);if(els[j]){els[j].setAttribute('cx',x.toFixed(1));els[j].setAttribute('cy',y.toFixed(1));}
+      G.balls[j].ang=a;G.balls[j].r=r;
+      const cell=Math.floor((((a-G.wAngle)%360)+360)%360/seg);
+      if(cell!==b.cell){b.cell=cell;if(now-lastTick>50){lastTick=now;sfx.tick();}}
+    });
+    lookAt(G.balls[0].ang);
+    if(t<1)requestAnimationFrame(frame);
+    else{G.wAngle=w1%360;B.forEach((b,j)=>{G.balls[j].ang=b.end-(w1-G.wAngle);G.balls[j].r=132;});done();}
+  }
+  requestAnimationFrame(frame);
+}
+function nudge(dir,bi){
+  if(G.mode!=='nudge')return;
+  if(dir!==0){const n=G.wheel.length,b=G.balls[bi||0];b.idx=(b.idx+dir+n)%n;b.ang+=dir*360/n;G.charges.nudge--;if(G.spinInfo)G.spinInfo.nudged=true;sfx.chip();}
+  G.armed=null;resolve();
+}
+function resolve(){
+  const n=G.wheel.length,hits=[];
+  G.balls.forEach(b=>hits.push(...hitsFor(b.idx)));
+  G.hits=hits.map(h=>h.i);
+  let {staked,back}=payout(hits);
+  let net=back-staked;const notes=[],dlg=[];let title='';
+  const sp=G.spinInfo||{};let tampered=false,eyed=false;
+  G.balls.forEach(b=>{const p=G.wheel[b.idx],seen=G.watch.includes(b.idx);
+    if(seen){eyed=true;notes.push('The Eye was watching '+(p.void?'that pocket':lab(p.num))+'. It paid nothing.');}
+    if(p.void)notes.push(has('felt')?'The Thing in the Felt gave your bets back.':'The Void swallowed every bet.');
+    else{if(p.color==='green'&&has('preacher')&&!seen)notes.push("Preacher's Coin made the zero pay every bet "+cnt('preacher')+' to 1.');
+      if(G.wheel.filter(q=>!q.void&&q.num===p.num).length>1)tampered=true;
+      if(p.gold){tampered=true;if(!seen)notes.push('Gold pocket: wins there paid x'+(2+cnt('tooth'))+'.');p.goldHits=(p.goldHits||0)+1;
+        if(p.goldHits>=3){p.gold=false;p.goldHits=0;notes.push('The last of the gold flaked off '+lab(p.num)+'.');}else notes.push('The gold is wearing thin: '+(3-p.goldHits)+' more hit'+(3-p.goldHits===1?'':'s')+'.');}}
+    if(has('noneuclid'))notes.push('Non-Euclidean Wheel also scored '+pname(G.wheel[(b.idx+Math.floor(n/2))%n])+' at half pay.');});
+  if(net<0&&G.snakeUsed<cnt('snake')){G.snakeUsed++;const r=Math.round(-net/2);back+=r;net+=r;notes.push('Snake Oil gave back '+fmt(r)+'.');}
+  let caught=null;
+  if(heatOn()){
+    const tab=TOLLS[G.night-1],was=G.heat;
+    const hp=[],add=(n,v)=>{v=Math.round(v);if(v)hp.push(n+' '+(v>0?'+':'')+v);};
+    let up=betHeat(staked)+(sp.magnet?HEAT.mag:0)+(sp.nudged?HEAT.nudge:0)+HEAT.ball*(G.balls.length-1);
+    add('big bet',betHeat(staked));if(sp.magnet)add('Magnet',HEAT.mag);if(sp.nudged)add('Nudge',HEAT.nudge);if(G.balls.length>1)add('Extra Ball',HEAT.ball*(G.balls.length-1));
+    const trick=tampered||sp.nudged||(sp.magIdx!=null&&G.balls.some(b=>b.idx===sp.magIdx));
+    if(net>0){if(trick){up+=winHeat(net);add('big win off a trick',winHeat(net));}if(tampered){up+=HEAT.tamper;add('doctored pocket',HEAT.tamper);}}
+    const stk=streakHeat(net),held=stk>0&&up===0&&G.heat+stk>heatLine();
+    if(stk)add((G.streak+1)+' wins in a row',up>0?stk:Math.max(0,Math.min(stk,heatLine()-G.heat)));
+    let down=0;if(up===0&&!stk){down+=HEAT.cool;add('quiet spin',-HEAT.cool);}if(net<0){down+=HEAT.lose;add('lost the spin',-HEAT.lose);}
+    G.heat=heatNext(up,stk,down);
+    if(held)notes.push('He does not like your streak, but with no trick to pin on you the Heat stops at '+heatLine()+'.');
+    if(was!==G.heat||hp.length)notes.push('Heat '+was+' to '+Math.min(G.heat,100)+(hp.length?' ('+hp.join(', ')+')':'')+'.');
+    if(G.heat>=100){
+      const took=Math.max(0,net);if(took>0){back-=took;net=0;}
+      const cut=Math.max(0,G.chips+back-toll());if(cut>0){back-=cut;net-=cut;}
+      let lost='';
+      if(G.relics.length){const id=G.relics.splice(Math.floor(Math.random()*G.relics.length),1)[0];lost='He takes your '+RELICS.find(r=>r.id===id).name+'.';caught={took,cut,lost:id};}
+      else if(G.wheel.some(p=>p.gold)){G.wheel.forEach(p=>{p.gold=false;p.goldHits=0;});lost='He scrapes every bit of gold off your wheel.';caught={took,cut,lost:'gold'};}
+      else caught={took,cut,lost:'none'};
+      G.heat=50;title='Caught';
+      dlg.push(G.night<=2?"\"You don't think we get cheaters in here all the time? I know how to spot 'em.\"":G.night<=5?"\"I'll hand it to you, stranger. You cheated your way further than most ever do. But I still caught you.\"":G.night<=7?'"You cheat beautifully. I have enjoyed watching every trick. I also caught every one."':'"YOU CHEATED WELL, LITTLE THING. IT SAW ALL OF IT."',took>0?'He sweeps your '+fmt(took)+' chips of winnings off the table.':'',cut>0?'Then he counts your stack down to tonight\'s tab. '+fmt(cut)+' more chips are gone. You are left with exactly '+fmt(toll())+'.':'',lost,'Heat drops back to 50.');
+      notes.push('Caught by the dealer.');
+    }else if(was<75&&G.heat>=75)notes.push('The dealer swaps the ball and watches your hands. Your powers are locked until Heat drops below 75.');
+    else if(was<50&&G.heat>=50)notes.push('The dealer is watching you closely.');
+  }
+  let prize=null;const ls=G.bets.luck||0;
+  if(ls>0){const hitL=G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
+    if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;notes.push('Lucky Draw hit: you got '+prize.name+'.');if(!title)title='Lucky Draw';dlg.push('The ball found a lucky pocket.','You staked '+fmt(ls)+', which reaches tier '+tier+'. You get <b>'+prize.name+'</b>.',prize.desc);}
+    else if(hitL)notes.push('The ball found a lucky pocket, but your Lucky Draw stake was under the first threshold.');
+    else notes.push('No lucky pocket. Your Lucky Draw stake is gone.');}
+  G.cold=false;const curses=[];
+  if(G.night>=3)G.balls.forEach(b=>{const p=G.wheel[b.idx];if(p&&!p.void&&p.color==='green')curses.push(1);});
+  if(G.log)G.log.spins.push({n:G.night,bets:{...G.bets},land:G.balls.map(b=>plab(G.wheel[b.idx])+(G.wheel[b.idx].gold?'g':'')),net,chips:G.chips+back,mult:Math.round(mult({gold:false})*100)/100,magnet:!!sp.magnet,balls:G.balls.length,nudged:!!sp.nudged,zeros:curses.length,heat:G.heat,eyed,lucky:prize?prize.name:undefined,caught:caught?caught.lost:undefined});
+  G.spinInfo=null;
+  G.chips+=back;G.bets={};
+  if(net>0){G.streak++;sfx.win();}else{G.streak=0;sfx.lose();}
+  const where=G.balls.map(b=>pname(G.wheel[b.idx])).join(' and ');
+  const landed=G.balls.length?G.balls[0].idx:-1;
+  const cz=curses.map(()=>curse());let changed=false;
+  if(cz.length){if(G.log&&G.log.spins.length)G.log.spins[G.log.spins.length-1].curses=cz.map(c=>c.id);if(cz.some(c=>c.id==='void'||c.id==='zero')){G.balls=[];G.hits=[];changed=true;}notes.push('The zero bit you: '+cz.map(c=>c.text).join(' '));
+    if(!title)title='The zero bites';dlg.push('The ball found a zero. The House collects on zeros.');cz.forEach(c=>dlg.push(c.text));}
+  moveEye(net>0&&!changed?landed:null);moveLucky();
+  G.res='Landed on '+where+'. '+(net>0?'You win +'+fmt(net)+' chips.':net===0?'You break even.':'You lose '+fmt(-net)+' chips.')+(notes.length?' '+[...new Set(notes)].join(' '):'');
+  if(G.spins<=0||G.chips<=0){G.mode='closing';say(G.chips>=toll()?'"Closing time. Settle up, stranger."':'"Closing time. And you are short."');}
+  else G.mode='bet';
+  render();logRun();
+  if(dlg.length)dealerSay(dlg,'Understood',title);
+  if(G.fs)setTimeout(()=>{G.fsHold=false;if(G.mode==='bet')render();},G.fast?1200:2200);else G.fsHold=false;
+}
+function endNight(){
+  if(G.mode==='bet'){G.chips+=totalBets();G.bets={};}
+  if(G.log)G.log.nights.push({n:G.night,tab:toll(),chipsStart:G.nightStart,chipsBeforeTab:G.chips,spinsLeft:G.spins,paid:G.chips>=toll(),wheel:G.wheel.length,house:G.house,relics:G.relics.slice()});
+  if(G.chips<toll()){gameOver(false);return;}
+  const t=toll();G.chips-=t;
+  let notes='Tab paid: '+fmt(t)+'.';
+  if(G.spins>0){const b=Math.min(G.spins,5)*r5(t*0.1);G.chips+=b;notes+=' Left early with '+G.spins+' spin'+(G.spins>1?'s':'')+' unused: +'+fmt(b)+'.';}
+  if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';}
+  if(G.night>=8){gameOver(true);return;}
+  G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.res=notes;rollShop();
+  say(dread()<0.4?'"Have a look at the back room before you go. Cash only."':'The back room is larger than the building. The shelves go down.');
+  render();
+}
+function rollShop(){
+  const next=G.night+1,cos=next>=5;
+  if(cos){try{localStorage.setItem('dmw_cosmic','1');}catch(e){}}
+  const pool=RELICS.filter(r=>!(r.u&&has(r.id))&&(!r.cosmic||cos)).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,4);
+  if(next>=7){const need=['unwritten','felt'].filter(id=>!has(id));if(need.length&&!pool.some(r=>need.includes(r.id))){const pickId=need[Math.floor(Math.random()*need.length)];pool[0]=RELICS.find(r=>r.id===pickId);}}
+  const tk=Object.keys(TOOLS).filter(k=>TOOLS[k].target&&(!TOOLS[k].cosmic||cos));
+  const tools=tk.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).slice(0,4).map(x=>({type:x[1],price:toolPrice(x[1]),sold:false}));
+  ['snudge','smag','sball'].forEach(k=>tools.push({type:k,price:price(TOOLS[k].base),sold:false}));
+  G.shop={relics:pool.map(r=>({id:r.id,price:r5(price(r.base)*(1+cnt(r.id))),sold:false})),tools};G.armed=null;
+}
+function buyRelic(i){const it=G.shop.relics[i];if(it.sold||G.chips<it.price||!canBuy('r')){sfx.bad();return;}G.chips-=it.price;it.sold=true;G.bought.r++;G.relics.push(it.id);G.log.buys.push({n:G.night,relic:it.id,price:it.price});sfx.buy();render();}
+function buyTool(i){
+  const it=G.shop.tools[i];if(it.sold||(!(it.left>0)&&G.chips<it.price)){sfx.bad();return;}
+  const T=TOOLS[it.type];if(!(it.left>0)&&!canBuy(T.target?'t':'s')){sfx.bad();return;}
+  if(T.target){G.armed=G.armed===i?null:i;if(G.armed!==null){say(T.name+': click a pocket on the wheel.');}render();if(G.armed!==null)showWheel();return;}
+  G.chips-=it.price;it.sold=true;G.bought.s++;G.charges[it.type==='sball'?'ball':it.type==='smag'?'magnet':'nudge']++;G.log.buys.push({n:G.night,supply:it.type,price:it.price});sfx.buy();render();
+}
+const canBuy=k=>(G.bought[k]||0)<2;
+const restockCost=()=>r5(TOLLS[G.night-1]*0.25*Math.pow(2,G.rerolls));
+function reroll(){const c=restockCost();if(G.rerolls>=2||G.chips<c){sfx.bad();return;}G.chips-=c;G.rerolls++;G.log.buys.push({n:G.night,restock:c});rollShop();sfx.buy();render();}
+function pocketClick(i){
+  if(G.mode==='nudge'){
+    if(G.armed!=='nudge')return;
+    const n=G.wheel.length,R=reach();let best=null;
+    G.balls.forEach((b,j)=>{let d=((i-b.idx)%n+n)%n;if(d>n/2)d-=n;if(d!==0&&Math.abs(d)<=R&&(!best||Math.abs(d)<Math.abs(best.d)))best={d,j};});
+    if(best){nudge(best.d,best.j);return;}
+    say('Pick one of the glowing pockets near the ball.');sfx.bad();render();return;
+  }
+  if(G.mode==='bet'&&G.armed==='magnet'){G.magnet=i;G.armed=null;{const n=G.wheel.length,M=magStr();say('Magnet set on '+pname(G.wheel[i])+'. The ball has a '+pct(M/(n+M-1))+' chance to land there this spin, up from '+pct(1/n)+'.');}sfx.buy();render();return;}
+  if(G.mode==='shop'&&G.armed!==null){
+    const it=G.shop.tools[G.armed];if(!it||it.sold)return;
+    const first=!(it.left>0);if(first&&(G.chips<it.price||!canBuy('t')))return;
+    const p=G.wheel[i],n=G.wheel.length,T=TOOLS[it.type],multi=it.type==='pry'||it.type==='brand'||it.type==='paint';let ok=true;const was=plab(p);
+    switch(it.type){
+      case'pry':if(n<=3)ok=false;else G.wheel.splice(i,1);break;
+      case'brand':G.wheel.splice(i,0,{...p,gold:false,goldHits:0});if(first)G.brands=(G.brands||0)+1;break;
+      case'paint':if(p.void||p.color==='green')ok=false;else p.color=p.color==='red'?'black':'red';break;
+      case'gild':if(p.gold&&!(p.goldHits>0))ok=false;else{p.gold=true;p.goldHits=0;}break;
+      case'door':if(p.void)ok=false;else{p.void=true;p.color='void';p.num=-1;}break;
+    }
+    if(!ok){say('That will not work on this pocket.');sfx.bad();render();return;}
+    if(first){G.chips-=it.price;G.bought.t++;it.left=multi?span():1;}
+    it.left--;G.balls=[];G.hits=[];G.log.buys.push({n:G.night,tool:it.type,on:was,price:first?it.price:0});
+    if(it.left<=0){it.sold=true;G.armed=null;say('Done. The wheel remembers.');}
+    else say(T.name+': done. Heavy Hands lets you use it on '+it.left+' more pocket'+(it.left===1?'':'s')+'. Click the next one.');
+    G.shop.tools.forEach(t=>{if(t.type==='brand'&&!t.sold&&!(t.left>0))t.price=toolPrice('brand');});sfx.buy();render();return;
+  }
+  if((G.mode==='bet'||G.mode==='shop')&&G.armed===null&&G.wheel[i]){say(pinfo(G.wheel[i],i));render();}
+}
+function gameOver(won){
+  G.mode='over';render();logRun(won?'won':'lost');
+  const o=$('overlay');o.className='show';
+  o.innerHTML='<div class="modal"><div class="portrait">'+dealerSVG(G.night)+'</div><h1>'+(won?'The Tab Is Paid':'The House Collects')+'</h1><p>'+
+   (won?'You set the last chip down and the wheel stops breathing. When you step outside there is only desert, a hitching post, and a sunrise that looks almost right. You walked out with <b>'+fmt(G.chips)+'</b> chips.'
+       :'You came up short on night '+G.night+'. Silas smiles with too many teeth and writes your name in the ledger, right under his own.')+
+   '</p><p class="hint">Relics held: '+(G.relics.map(id=>RELICS.find(r=>r.id===id).name).join(', ')||'none')+'. Wheel size: '+G.wheel.length+' pockets.</p><p class="hint" id="saveNote">'+(DB?'This run was saved so Claude can review it with you.':SHEET_URL?'Playtest build: this run was sent to the developer. Thank you for playing.':'This run was not sent anywhere. Use Copy run summary to share it.')+'</p><button class="big" data-act="restart">Play again</button> <button data-act="copyRun">Copy run summary</button><textarea id="runBox" style="display:none;width:100%;height:90px;margin-top:10px" readonly></textarea></div>';
+  won?sfx.win():sfx.lose();
+}
+function cosmicSeen(){if(G.night>=5||(G.night===4&&G.mode==='shop'))return true;try{return localStorage.getItem('dmw_cosmic')==='1';}catch(e){return false;}}
+const PW=()=>[['magnet','Magnet','Before a spin, pick a pocket. It becomes '+magStr()+' times as likely to be hit.'],['ball','Extra Ball','Spin extra balls. Every ball pays. Tap the button more than once to add up to 3.'],['nudge','Nudge','After the ball lands, move it up to '+reach()+' pocket'+(reach()>1?'s':'')+' either way.']];
+const owned=()=>{const m=new Map();G.relics.forEach(id=>m.set(id,(m.get(id)||0)+1));return [...m.entries()].map(e=>[RELICS.find(x=>x.id===e[0]),e[1]]);};
+function showItems(tab){
+  if(G.mode==='intro'||G.mode==='over')return;
+  tab=tab||'mine';
+  const row=(a,b,cls,tag)=>'<div class="relic'+(cls?' '+cls:'')+'">'+(tag?'<span>'+tag+'</span>':'')+'<b>'+a+'</b>: '+b+'</div>';
+  const none=t=>'<div class="hint">'+t+'</div>',pl=n=>n===1?'':'s',num=v=>(Math.round(v*100)/100).toString();
+  let h='<div class="modal inv"><div class="tabs"><button data-act="invTab" data-tab="mine" class="'+(tab==='mine'?'on':'')+'">What you have</button><button data-act="invTab" data-tab="mods" class="'+(tab==='mods'?'on':'')+'">Current modifiers</button><button data-act="invTab" data-tab="all" class="'+(tab==='all'?'on':'')+'">Everything in the game</button></div>';
+  if(tab==='mine'){
+    const ow=owned();
+    h+='<h3>Relics ('+G.relics.length+')</h3>'+(ow.length?ow.map(e=>row(e[0].name,e[0].desc,e[0].cosmic?'cosmic':'',e[1]>1?'x'+e[1]:'')).join(''):none('No relics yet. Buy them in the back room after each night.'));
+    const pw=PW().filter(x=>G.charges[x[0]]>0);
+    h+='<h3>Ball Powers</h3>'+(pw.length?pw.map(x=>row(x[1],x[2],'',G.charges[x[0]]+' left')).join(''):none('No charges left right now.'));
+    const cn={};G.wheel.forEach(p=>{if(!p.void)cn[p.num]=(cn[p.num]||0)+1;});
+    const dup=[],miss=[];G.zeros.concat(Array.from({length:G.N},(_,i)=>i+1)).forEach(v=>{if(!cn[v])miss.push(lab(v));else if(cn[v]>1)dup.push(lab(v)+' (x'+cn[v]+')');});
+    const gold=G.wheel.filter(p=>p.gold).map(p=>p.void?'Void':lab(p.num)),painted=G.wheel.filter(p=>!p.void&&p.color!==mk(p.num).color).map(p=>lab(p.num)+' is now '+p.color);
+    let w='';
+    if(gold.length)w+=row('Gold pockets',gold.join(', '));
+    if(dup.length)w+=row('Duplicated numbers',dup.join(', '));
+    if(miss.length)w+=row('Removed numbers',miss.join(', '));
+    if(painted.length)w+=row('Repainted',painted.join(', '));
+    h+='<h3>Wheel Changes</h3>'+(w?row('Size','Your wheel has '+G.wheel.length+' pockets. The House built '+G.house+'.')+w:none("None yet. Your wheel is exactly what the House built."));
+  }else if(tab==='mods'){
+    const parts=[];
+    if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push(['Hot Streak'+(c>1?' x'+c:''),G.streak+' win'+pl(G.streak)+' in a row, so +'+st*10*c+'%.'+(st<5?' Your next win raises it to +'+(st+1)*10*c+'%.':' That is the cap.')+' A losing spin resets it to zero.',1+0.1*c*st]);}
+    if(G.cold)parts.push(['Cold hands','A zero cursed you. Winnings on your next spin are halved.',0.5]);
+    if(G.hunger>0)parts.push(['The Hunger',G.hunger+' pocket'+pl(G.hunger)+' eaten, so +'+G.hunger*10+'%. It grows every night.',1+0.1*G.hunger]);
+    if(has('undertaker')){const c=cnt('undertaker'),k=Math.max(0,G.house-G.wheel.length);parts.push(["Undertaker's Ledger"+(c>1?' x'+c:''),'Your wheel is '+k+' pocket'+pl(k)+" smaller than the House's, so +"+k*2*c+'%.',1+0.02*c*k]);}
+    const m=mult({gold:false}),gm=2+cnt('tooth'),golds=G.wheel.filter(p=>p.gold).map(p=>p.void?'Void':lab(p.num));
+    h+='<h3>Payout Multiplier</h3><div class="bigm">Your next win pays x'+m.toFixed(2)+'</div>'+(parts.length?parts.map(x=>row(x[0],x[1],'','x'+x[2].toFixed(2))).join('')+(parts.length>1?none('These multiply together.'):''):none('Nothing is boosting your payouts yet. Wins pay at plain table odds.'));
+    h+='<h3>Heat</h3>'+(heatOn()?row('Heat right now',G.heat+' of 100.'+(locked()?' Your powers are locked.':''))+
+      row('Raises it','Betting more than '+fmt(heatFree())+" a spin ("+(G.night<=2?'twice':'the same as')+" tonight's tab), and the bigger the bet the more it adds. Magnet +"+HEAT.mag+", Nudge +"+HEAT.nudge+", each Extra Ball +"+HEAT.ball+". Winning on a gold or copied pocket +"+HEAT.tamper+". A win over "+fmt(winFreeChips())+" that came off a Magnet, a Nudge, or a gold or copied pocket: every tab's worth over that adds "+winMult()+". Honest win size never adds any.")+row('Winning streaks','A 3rd winning spin in a row adds '+HEAT.streak+', a 4th '+HEAT.streak*2+', a 5th '+HEAT.streak*3+', and so on. Streak Heat alone cannot cross a line: it stops at 74 (powers lock at 75), or at 99 once you are past 75 (caught at 100). On a spin where you also used a trick, it counts in full.'+(G.streak>=2?' You have won '+G.streak+' in a row, so your next win adds up to '+HEAT.streak*(G.streak-1)+'.':''))+
+      row('Lowers it','Any spin that adds no Heat: -'+HEAT.cool+'. A losing spin: -'+HEAT.lose+'. Every new night cuts it in half.')+
+      row('At 75','The dealer swaps the ball. Magnet, Nudge and Extra Ball stop working until Heat drops.')+
+      row('At 100','You are caught. He takes that spin\'s winnings, cuts your chips down to tonight\'s tab if you hold more, and takes one of your relics. Then Heat drops to 50.'):none('The dealer starts watching for cheats on night 3.'));
+    {const st=luckSteps();h+='<h3>Lucky Draw</h3>'+row('How it works','Put chips on the Lucky Draw square. If the ball lands on a starred pocket you get an item, not chips. The stake is spent either way. The Eye still wins: a watched pocket gives nothing.')+row('Tiers tonight',fmt(st[0])+' for '+TIERN[1]+'. '+fmt(st[1])+' for '+TIERN[2]+'. '+fmt(st[2])+' for '+TIERN[3]+'.')+row('Starred now',(luckyNames().join(', ')||'none')+'. That is a '+pct(G.lucky.length/Math.max(1,G.wheel.length))+' chance.');}
+    h+='<h3>The Back Room</h3>'+row('Limits','Each night you can buy at most 2 relics, 2 wheel tools and 2 power charges. Restocking changes what is on offer, not the limits.');
+    h+='<h3>The Eye</h3>'+(G.night>=4?row('Watching now',watchNames().join(', ')||'nothing')+row('What it does','A ball that lands on a watched pocket pays nothing. Winning bets only get their stake back. It moves after every spin and drifts toward where you last won.'):none('It opens on night 4.'));
+    if(golds.length||has('tooth'))h+=row('Gold pockets',golds.length?'If the ball lands on '+golds.join(', ')+', that win is multiplied again. Gold flakes off after 3 hits.':'None on your wheel yet.','','x'+gm);
+    const now=o=>m===1?'':num(o*m)+' to 1 now',sb=baseOdds('n2'),eb=baseOdds('red'),t=G.N/3;
+    h+='<h3>What Each Bet Pays</h3>'+none('The table has '+G.N+' numbers tonight. Payouts grow when the table grows.')+
+      row('Straight (1 number)',sb+' to 1'+(has('longshot')?' with The Long Shot':'')+(has('deadman')?'. On 1 and 8 it is '+baseOdds('n1')+" to 1 with Dead Man's Hand":'')+'.','',now(sb))+
+      row('Split (2 numbers)',baseOdds('s1_2')+' to 1.','',now(baseOdds('s1_2')))+row('Corner (4 numbers)',baseOdds('c1_2_4_5')+' to 1.','',now(baseOdds('c1_2_4_5')))+
+      row('Thirds and columns ('+t+' numbers)','2 to 1.','',now(2))+row('Red, Black, Odd, Even, low half, high half',num(eb)+' to 1'+(has('horseshoe')?' with Rusty Horseshoe':'')+'.','',now(eb))+
+      (has('unwritten')?row('The Void','2 to 1 with The Unwritten Square.','cosmic',now(2)):'');
+    const rules=[['preacher','Zeros pay '+cnt('preacher')+' to 1'],['snake',Math.max(0,cnt('snake')-G.snakeUsed)+' left tonight'],['deed','15%, up to '+fmt(Math.round(TOLLS[G.night-1]*0.25))],['eye','Active'],['felt','Voids give bets back'],['unwritten','Active'],['noneuclid','Active']].filter(x=>has(x[0]));
+    if(rules.length)h+='<h3>Rule Changes</h3>'+rules.map(x=>{const r=RELICS.find(y=>y.id===x[0]);return row(r.name+(cnt(r.id)>1?' x'+cnt(r.id):''),r.desc,r.cosmic?'cosmic':'',x[1]);}).join('');
+    h+='<h3>Your Powers</h3>'+row('Magnet strength','A magnetized pocket is '+magStr()+' times as likely to be hit.'+(has('pull')?'':' Mother Lode raises this.'),'',G.charges.magnet+' left')+
+      row('Nudge reach','Up to '+reach()+' pocket'+pl(reach())+' either way.'+(has('reach')?'':' Long Reach raises this.'),'',G.charges.nudge+' left')+
+      row('Tool reach','Pry Bar, Branding Iron and Paint Bucket can each be used on '+span()+' pocket'+pl(span())+' of your choice.'+(has('heavy')?'':' Heavy Hands raises this.'));
+    h+='<h3>Every Night You Get</h3>'+row('Spins',String(5+cnt('watch'))+'.')+row('Extra Ball',G.charges.ball+' charge'+pl(G.charges.ball)+' left.')+
+      row('Fresh charges',perNight('nudge')+perNight('magnet')+perNight('ball')?'Nudge +'+perNight('nudge')+', Magnet +'+perNight('magnet')+', Extra Ball +'+perNight('ball')+' from your relics.':'None. Nudge, Magnet and Extra Ball charges are one-time use. Buy more in the back room.');
+  }else{
+    const seen=cosmicSeen(),hid=row('???','Something you have not run into yet.','cosmic');
+    h+='<h3>Relics ('+RELICS.length+')</h3><div class="hint">Passive effects that last the whole run. You pick one to start and buy more in the back room. Most of them stack: buy a second copy and the effect doubles up, but every copy you already own raises the price of the next.</div>'+
+      RELICS.map(r=>r.cosmic&&!seen&&!has(r.id)?hid:row(r.name,rdesc(r),r.cosmic?'cosmic':'',has(r.id)?'Owned'+(cnt(r.id)>1?' x'+cnt(r.id):''):'')).join('');
+    h+='<h3>Ball Powers</h3><div class="hint">Charges you spend at the table. Each one is used up for good. Buy more in the back room. Relics make them stronger.</div>'+PW().map(x=>row(x[1],x[2],'',G.charges[x[0]]>0?G.charges[x[0]]+' left':'')).join('');
+    h+='<h3>Back Room Tools and Supplies</h3><div class="hint">One-time buys. Tools change a pocket on the wheel. Supplies add a charge.</div>'+
+      Object.keys(TOOLS).map(k=>{const T=TOOLS[k];return T.cosmic&&!seen?hid:row(T.name,T.desc,T.cosmic?'cosmic':'');}).join('');
+  }
+  h+='<div style="text-align:center;margin-top:16px"><button class="big" data-act="closeItems">Close</button></div></div>';
+  const o=$('overlay');o.innerHTML=h;o.className='show';
+}
+function intro(){
+  const o=$('overlay'),sv=loadSave();o.className='show';
+  o.innerHTML='<div class="modal"><div class="portrait">'+dealerSVG(1)+'</div><h1>Dead Man\'s Wheel</h1><p>A roulette wheel in a saloon at the edge of nowhere. Eight nights. Every night the tab gets bigger and so does the wheel. Pay by closing time or you never leave.</p>'+
+  '<p>Bet chips, spin, and use what you win in the back room to <b>rebuild the wheel</b>, <b>bend the ball</b>, and <b>break the house rules</b>. You can\'t help but feel there is something off about this place...</p>'+
+  (sv?'<button class="big" data-act="resume">Sit back down (night '+sv.night+', '+fmt(sv.chips)+' chips)</button> <button data-act="begin" style="margin-top:10px">Start a new run</button>':'<button class="big" data-act="begin">Push through the doors</button>')+
+  (SHEET_URL?'<p class="hint" style="margin-top:12px">Playtest build. Your name and how each run goes (bets, purchases, results) are sent to the developer to help balance the game. Nothing else is collected.</p>':'')+'</div>';
+}
+function pickStart(){
+  const opts=RELICS.filter(r=>!r.cosmic).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,3);
+  $('overlay').innerHTML='<div class="modal"><h3>A drifter at the bar slides three things across to you. Take one.</h3><div class="shop">'+
+   opts.map(r=>'<button class="card" data-act="start" data-id="'+r.id+'"><b>'+r.name+'</b>'+rdesc(r)+'</button>').join('')+'</div></div>';
+}
+
+/* ---------- rendering ---------- */
+function polar(r,deg){const a=(deg-90)*Math.PI/180;return[r*Math.cos(a),r*Math.sin(a)];}
+function lerpHex(a,b,t){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);let o='#';for(const s of[16,8,0]){const x=(pa>>s)&255,y=(pb>>s)&255;o+=Math.round(x+(y-x)*t).toString(16).padStart(2,'0');}return o;}
+const PAL={bg:['#2a1a10','#07060f'],panel:['#3b2616','#14102a'],ink:['#f1e2c2','#d9d2ff'],accent:['#d9a441','#7df0c8'],red:['#a8321f','#b01e6a'],black:['#1c1512','#0a0a14'],green:['#2f6b3a','#1fae9a'],felt:['#24503a','#1a1440'],edge:['#6b4423','#3a2f7a']};
+function applyDread(){
+  const d=dread(),t=Math.max(0,(d-0.2)/0.8);
+  for(const k in PAL)document.documentElement.style.setProperty('--'+k,lerpHex(PAL[k][0],PAL[k][1],t));
+  document.body.className=d>=0.7?'d2 d3':d>=0.4?'d2':'';
+  setDrone();
+}
+function renderWheel(){
+  const n=G.wheel.length,seg=360/n,large=seg>180?1:0;let s='<circle r="194" class="rim"/><g id="wg" transform="rotate('+G.wAngle.toFixed(2)+')">';
+  const showOc=totalBets()>0&&G.mode!=='shop';
+  const nfs=Math.max(7,Math.min(17,seg*1.2)).toFixed(1),ofs=Math.max(6,Math.min(11,seg*0.85)).toFixed(1);
+  G.wheel.forEach((p,i)=>{
+    const a0=i*seg,a1=(i+1)*seg,A=polar(172,a0),B=polar(172,a1),C=polar(92,a1),D=polar(92,a0),f=v=>v.toFixed(1);
+    const cls=(p.void?'void':p.color)+(p.gold?' gold':'')+(G.magnet===i?' mag':'')+(G.hits.includes(i)?' hit':'');
+    s+='<path class="pk '+cls+'" data-i="'+i+'" d="M'+f(A[0])+' '+f(A[1])+'A172 172 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';
+    const T=polar(152,a0+seg/2);
+    s+='<text class="pl up" style="font-size:'+nfs+'px" data-l="'+i+'" data-t="'+plab(p)+'" data-x="'+f(T[0])+'" data-y="'+f(T[1])+'" x="'+f(T[0])+'" y="'+f(T[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(T[0])+' '+f(T[1])+')">'+plab(p)+'</text>';
+    if(showOc&&(n<=20||outcome(i)>0)){const v=outcome(i),O=polar(n>20?(i%2?126:110):116,a0+seg/2);
+      const ct=wouldCatch(i);s+='<text class="ocw up '+(ct?'c':v>0?'w':v<0?'l':'')+'" style="font-size:'+ofs+'px" data-x="'+f(O[0])+'" data-y="'+f(O[1])+'" x="'+f(O[0])+'" y="'+f(O[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(O[0])+' '+f(O[1])+')">'+(ct?'caught':short(v))+'</text>';}
+  });
+  if(G.mode==='nudge'&&G.armed==='nudge'){
+    const f=v=>v.toFixed(1),tg=new Set();G.balls.forEach(b=>{for(let d=1;d<=reach();d++){tg.add((b.idx+d)%n);tg.add(((b.idx-d)%n+n)%n);}});G.balls.forEach(b=>tg.delete(b.idx));
+    tg.forEach(i=>{const a0=i*seg,a1=a0+seg,A=polar(192,a0),B=polar(192,a1),C=polar(92,a1),D=polar(92,a0);
+      s+='<path class="nudgeov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';});
+  }
+  if(G.mode!=='shop')G.lucky.forEach(i=>{if(i>=n)return;const f=v=>v.toFixed(1),a0=i*seg,a1=a0+seg,A=polar(192,a0),B=polar(192,a1),C=polar(173,a1),D=polar(173,a0),M=polar(183,a0+seg/2);
+    s+='<path class="luckov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A173 173 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/><text class="lstar" x="'+f(M[0])+'" y="'+f(M[1])+'" style="font-size:'+Math.max(7,Math.min(14,seg*1.1)).toFixed(1)+'px">★</text>';});
+  if(G.mode!=='shop')G.watch.forEach(i=>{if(i>=n)return;const f=v=>v.toFixed(1),a0=i*seg,a1=a0+seg,A=polar(192,a0),B=polar(192,a1),C=polar(92,a1),D=polar(92,a0);
+    s+='<path class="eyeov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';});
+  if(G.mode!=='shop'&&G.watch.length&&G.watch[0]<n){const f=v=>v.toFixed(1),mid=G.watch[Math.floor(G.watch.length/2)],M=polar(183,(mid+0.5)*seg);
+    s+='<text class="magic up" data-x="'+f(M[0])+'" data-y="'+f(M[1])+'" x="'+f(M[0])+'" y="'+f(M[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(M[0])+' '+f(M[1])+')">👁</text>';}
+  if(G.magnet>=0&&G.magnet<n){
+    const a0=G.magnet*seg,a1=a0+seg,f=v=>v.toFixed(1),A=polar(192,a0),B=polar(192,a1),C=polar(92,a1),D=polar(92,a0),M=polar(183,a0+seg/2);
+    s+='<path class="magov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';
+    s+='<text class="magic up" data-x="'+f(M[0])+'" data-y="'+f(M[1])+'" x="'+f(M[0])+'" y="'+f(M[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(M[0])+' '+f(M[1])+')">\u{1F9F2}</text>';
+  }
+  s+='</g><circle r="90" class="hub"/><circle r="62" class="hub2"/>';
+  const d=dread();
+  if(d>=0.4){const open=Math.min(1,(d-0.3)/0.5);
+    s+='<ellipse rx="48" ry="'+(8+22*open).toFixed(1)+'" fill="#e9e4d0" stroke="#000" stroke-width="2"/><g id="iris"><circle r="'+(10+8*open).toFixed(1)+'" fill="#6a2bd9"/><circle r="'+(4+4*open).toFixed(1)+'" fill="#000"/></g>';
+  }else s+='<text y="6" text-anchor="middle" style="font-family:Rye,serif;font-size:20px;fill:var(--accent)">★</text>';
+  G.balls.forEach((b,j)=>{const P=polar(b.r,b.ang);s+='<circle id="b'+j+'" class="ball" r="'+Math.max(3.5,Math.min(7,132*seg*Math.PI/180*0.45)).toFixed(1)+'" cx="'+P[0].toFixed(1)+'" cy="'+P[1].toFixed(1)+'"/>';});
+  const w=$('wheel');w.innerHTML=s;
+  w.setAttribute('class',(G.armed!==null&&(G.mode==='bet'||G.mode==='shop'||G.mode==='nudge'))?'arming':'');
+}
+function upright(){const r=(-G.wAngle).toFixed(1);document.querySelectorAll('.up').forEach(el=>el.setAttribute('transform','rotate('+r+' '+el.dataset.x+' '+el.dataset.y+')'));}
+function lookAt(deg){const ir=$('iris');if(!ir)return;const P=polar(16,deg);ir.setAttribute('transform','translate('+P[0].toFixed(1)+' '+(P[1]*0.5).toFixed(1)+')');}
+function isVert(){return window.innerWidth<700&&window.innerHeight>window.innerWidth;}
+const abbr=a=>a>=1e6?(a/1e6).toFixed(1)+'m':a>=1e4?(a/1e3).toFixed(1)+'k':fmt(a);
+function boardHTML(){
+  const V=isVert(),N=G.N,W=N/3+1,f=v=>v.toFixed(3)+'%';
+  const rect=(x,y,w,h)=>V?'left:'+f((3-y-h)/3*100)+';top:'+f(x/W*100)+';width:'+f(h/3*100)+';height:'+f(w/W*100):'left:'+f(x/W*100)+';top:'+f(y/3*100)+';width:'+f(w/W*100)+';height:'+f(h/3*100);
+  const wn=new Set(G.watch.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num)),ln=new Set(G.lucky.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num));
+  const cell=(k,label,cls,st8)=>{const st=G.bets[k],w=wn.has(+k.slice(1)),lk=ln.has(+k.slice(1));return '<button class="spot '+cls+(st?' bet':'')+(w?' watched':'')+(lk?' lucky':'')+'" data-bet="'+k+'" style="'+st8+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'><span class="l">'+(lk?'<i class="ls">★</i>':'')+(w?'👁 ':'')+label+'</span>'+(st?'<span class="stake">'+abbr(st)+'</span>':'')+spotOutcome(k,st)+'</button>';};
+  const hot=(k,x,y)=>{const st=G.bets[k];return '<button class="hot'+(k[0]==='c'?' cn':'')+(st?' has':'')+'" data-bet="'+k+'" style="left:'+f(V?(3-y)/3*100:x/W*100)+';top:'+f(V?x/W*100:y/3*100)+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'>'+(st?abbr(st):'')+'</button>';};
+  let h='<div class="board'+(V?' vert':'')+(totalBets()>0?' live':'')+'"'+(V?' style="height:'+W*44+'px"':'')+'>';
+  const zs=G.zeros.slice().sort((a,b)=>b-a),zh=3/zs.length;
+  zs.forEach((z,j)=>{h+=cell('n'+z,lab(z),'green',rect(0,j*zh,1,zh));});
+  for(let v=1;v<=N;v++)h+=cell('n'+v,v,RED.has(v)?'red':'black',rect(colOf(v),rowOf(v),1,1));
+  for(let v=1;v<=N-3;v++)h+=hot('s'+v+'_'+(v+3),colOf(v)+1,rowOf(v)+0.5);
+  for(let v=1;v<N;v++)if(v%3)h+=hot('s'+v+'_'+(v+1),colOf(v)+0.5,rowOf(v));
+  for(let v=1;v<=N-4;v++)if(v%3)h+=hot('c'+[v,v+1,v+3,v+4].join('_'),colOf(v)+1,rowOf(v));
+  return h+'</div>';
+}
+function spot(k,label,cls,style){
+  const st=G.bets[k],dead=deadBet(k);
+  return '<button class="spot '+(cls||'')+(st?' bet':'')+'" data-bet="'+k+'"'+(style?' style="'+style+'"':'')+(dead||G.mode!=='bet'?' disabled':'')+'><span class="l">'+label+'</span><small>'+oddsTxt(k)+' · '+pct(chance(k))+'</small>'+(st?'<span class="stake">'+fmt(st)+'</span>':'')+spotOutcome(k,st)+'</button>';
+}
+function luckSpot(){
+  const st=G.bets.luck||0,s=luckSteps(),t=luckTier(st);
+  return '<button class="spot luckspot'+(st?' bet':'')+'" data-bet="luck"'+(G.mode!=='bet'?' disabled':'')+'><span class="l">★ Lucky Draw</span><small>'+s.join(' / ')+' · '+pct(G.lucky.length/G.wheel.length)+'</small>'+(st?'<span class="stake">'+fmt(st)+'</span><span class="oc w">'+(t?'tier '+t+': '+['','charge','relic','rare relic'][t]:'too small')+'</span>':'')+'</button>';
+}
+function spotOutcome(k,st){
+  if(totalBets()<=0||G.mode==='shop')return '';
+  if(k[0]==='n'){
+    const v=+k.slice(1),vals=[];let ct=false;G.wheel.forEach((p,i)=>{if(!p.void&&p.num===v){vals.push(outcome(i));if(wouldCatch(i))ct=true;}});
+    if(!vals.length)return '';
+    const lo=Math.min(...vals),hi=Math.max(...vals);
+    return ct?oc(hi,true):lo===hi?oc(lo):oc(lo)+oc(hi);
+  }
+  return st?'<span class="oc w">pays +'+fmt(Math.round(st*baseOdds(k)*mult({gold:false})))+'</span>':'';
+}
+const TPOS=[0.07,0.61,0.33,0.86,0.19,0.74,0.47,0.95,0.27,0.55,0.12,0.68,0.40,0.81,0.02,0.90,0.36,0.50];
+let tentKey='';
+function tentacles(){
+  const layer=$('tent');if(!layer||typeof document.querySelector!=='function')return;
+  const fs=document.body.classList.contains('fs'),host=document.querySelector(fs?'#lower .board':'#lower .felt');
+  const cnt=G&&G.mode!=='intro'&&G.mode!=='over'&&host?[0,0,2,4,7,10,14,18][G.night-1]:0;
+  if(!cnt){if(tentKey){layer.innerHTML='';tentKey='';}return;}
+  const r=host.getBoundingClientRect(),key=[G.night,fs,Math.round(r.width),Math.round(r.height)].join('|');
+  if(key!==tentKey){
+    tentKey=key;const W=r.width,H=r.height,per=2*(W+H),t=(G.night-1)/7,rnd=j=>{const x=Math.sin(j*12.9898+G.night)*43758.5453;return x-Math.floor(x);};
+    const tight=!fs&&window.innerWidth-W<90,len0=[0,0,22,30,40,52,64,78][G.night-1]*(fs?0.55:1),bw=(7+G.night*0.9)*(fs?0.8:1);
+    const c0=lerpHex('#4a3a5c','#12705f',t),c1=lerpHex('#8a7f9a','#3fe0b4',t);let h='';
+    for(let j=0;j<cnt;j++){
+      let d=TPOS[j]*per,x,y,dir,tilt=(rnd(j)-0.5)*50;
+      let short=1;if(d<W){x=d;y=0;dir=180;short=0.45;}
+      else if(d<W+H){x=W;y=d-W;dir=-90;if(tight){dir=j%2?180:0;tilt=dir===0?-18:18;}}
+      else if(d<2*W+H){x=W-(d-W-H);y=H;dir=0;}
+      else{x=0;y=H-(d-2*W-H);dir=90;if(tight){dir=j%2?180:0;tilt=dir===0?18:-18;}}
+      const len=len0*short*(0.7+0.6*rnd(j+50)),sh=len/(1+4*0.7),dur=2.2+rnd(j+9)*2;let inner='';
+      for(let k=4;k>=0;k--){const w=bw*Math.pow(0.8,k);
+        inner='<div class="sg" style="width:'+w.toFixed(1)+'px;height:'+sh.toFixed(1)+'px;margin-left:'+(-w/2).toFixed(1)+'px;--a:'+(7+k*3+rnd(j+k)*5).toFixed(1)+'deg;animation-duration:'+(dur+k*0.25).toFixed(2)+'s;animation-delay:-'+(rnd(j*3+k)*dur+k*0.35).toFixed(2)+'s;background:'+lerpHex(c0,c1,k/4)+'">'+inner+'</div>';}
+      h+='<div class="tn" style="left:'+x.toFixed(1)+'px;top:'+y.toFixed(1)+'px;transform:rotate('+(dir+tilt).toFixed(1)+'deg)">'+inner+'</div>';
+    }
+    layer.innerHTML='<div id="tentBox">'+h+'</div>';
+  }
+  const box=$('tentBox');if(box&&box.style){box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.width=r.width+'px';box.style.height=r.height+'px';}
+}
+function nudgeBtns(){return '<button class="big" data-act="nudgeArm">'+(G.armed==='nudge'?'Now tap a glowing pocket (tap here to cancel)':'Nudge the ball ('+G.charges.nudge+' left)')+'</button><button data-act="n0">Let it ride</button>';}
+function showWheel(){try{$('wheel').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}}
+function renderLower(){
+  const L=$('lower');
+  if(G.mode==='shop'){
+    const rc=restockCost();
+    const nx=TOLLS[G.night],short=nx-G.chips;
+    L.innerHTML='<div class="felt"><div class="nexttab'+(short>0?' bad':'')+'">Next tab: <b>'+fmt(nx)+'</b> chips. You have <b>'+fmt(G.chips)+'</b>.'+(short>0?' You are '+fmt(short)+' short, so you will have to win it at the table.':' You are covered by '+fmt(-short)+'.')+'</div><h3>Relics <span class="cap">'+G.bought.r+' of 2 bought tonight</span></h3><div class="shop">'+
+      G.shop.relics.map((it,i)=>{const r=RELICS.find(x=>x.id===it.id),cap=!it.sold&&!canBuy('r');return '<button class="card'+(r.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+'" data-act="relic" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+r.name+'</b>'+rdesc(r)+(cnt(r.id)?' <i class="hint">You have '+cnt(r.id)+'.</i>':'')+'<span class="p">'+(it.sold?'Sold':cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
+      '</div><h3>Wheel Tools <span class="cap">'+G.bought.t+' of 2 bought tonight</span></h3><div class="shop">'+
+      G.shop.tools.map((it,i)=>{const T=TOOLS[it.type];if(!T.target)return '';const cap=!it.sold&&!(it.left>0)&&!canBuy('t');return '<button class="card'+(T.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+(G.armed===i?' on':'')+'" data-act="tool" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+T.name+'</b>'+T.desc+'<span class="p">'+(it.sold?'Sold':it.left>0?'Paid. '+it.left+' more use'+(it.left===1?'':'s'):cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
+      '</div><h3>Power Charges <span class="cap">'+G.bought.s+' of 2 bought tonight</span></h3><div class="hint" style="margin-bottom:6px">One-time use. They do not come back each night.</div><div class="shop">'+
+      G.shop.tools.map((it,i)=>{const T=TOOLS[it.type];if(T.target)return '';const cap=!it.sold&&!canBuy('s');return '<button class="card'+(it.sold||cap?' sold':'')+'" data-act="tool" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+T.name+'</b>'+T.desc+'<span class="p">'+(it.sold?'Sold':cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
+      '</div><div class="row act"><button data-act="reroll"'+(G.rerolls>=2?' disabled':'')+'>'+(G.rerolls>=2?'Shelves are bare tonight':'Restock the shelves ('+fmt(rc)+', '+(2-G.rerolls)+' left tonight)')+'</button><span class="sp" style="flex:1"></span><button class="big" data-act="next">Back to the table: Night '+(G.night+1)+'</button></div>'+
+      '</div>';
+    return;
+  }
+  if(G.mode==='intro'||G.mode==='over'){L.innerHTML='';return;}
+  const chips=[5,25,100,500,'half','all'];
+  let h='<div class="felt'+(G.remove?' removing':'')+'"><div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div><div class="chips"><span>Chip:</span>'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c)+'</button>').join('')+
+    '<span style="flex:1"></span><button data-act="fs" class="'+(G.fs?'on':'')+'">'+(G.fs?'Exit full screen':'Full screen')+'</button><button data-act="remove" class="'+(G.remove?'rm':'')+'"'+(G.mode==='bet'&&totalBets()>0?'':' disabled')+'>'+(G.remove?'Taking off':'Take off')+'</button><button data-act="rebet"'+(G.last&&G.mode==='bet'?'':' disabled')+'>Rebet</button><button data-act="clear"'+(G.mode==='bet'?'':' disabled')+'>Clear all</button></div>';
+  {const N=G.N,hf=N/2,t=N/3;
+  h+=boardHTML()+'<div class="outs">'+spot('red','Red','red')+spot('black','Black','black')+spot('odd','Odd')+spot('even','Even')+spot('low','1-'+hf)+spot('high',(hf+1)+'-'+N)+spot('t1','1-'+t)+spot('t2',(t+1)+'-'+2*t)+spot('t3',(2*t+1)+'-'+N)+spot('k1','Col 1')+spot('k2','Col 2')+spot('k3','Col 3')+(has('unwritten')?spot('void','The Void','voidspot'):'')+luckSpot()+'</div>';}
+  h+='<div class="row act" style="margin:12px 0 0">';
+  if(G.mode==='bet'){
+    {const proj=heatOn()?Math.round(heatPlan()):0,cool=heatOn()&&proj===0&&G.heat>0&&totalBets()>0;
+    h+='<button class="big'+(heatOn()&&G.heat+proj>=100?' danger':'')+'" data-act="spin">Spin ('+fmt(totalBets())+' on the table'+(proj>0?', Heat +'+proj+' before any win':cool?', cools Heat by '+HEAT.cool:'')+')</button>';}
+    if(G.fs)h+='<button data-act="magnet" class="'+(G.magnet>=0?'on':'')+'"'+(G.charges.magnet>0?'':' disabled')+'>'+(G.magnet>=0&&G.wheel[G.magnet]?'Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)):'Magnet ('+G.charges.magnet+')')+'</button><button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(G.charges.ball>0?'':' disabled')+'>'+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':''):'Extra Ball ('+G.charges.ball+')')+'</button>';
+    if(G.chips+totalBets()>=toll())h+='<button data-act="settle" class="payok">Pay the tab and leave early (+'+fmt(Math.min(G.spins,5)*r5(toll()*0.1))+' for unused spins)</button>';
+  }else if(G.mode==='nudge'){
+    h+=nudgeBtns()+'<span class="hint">Nudge moves a ball to a nearby pocket. The numbers on the wheel show what each pocket is worth.</span>';
+  }else if(G.mode==='closing'){
+    h+='<button class="big" data-act="settle">Closing time: settle the tab</button>';
+  }else h+='<span class="hint">No more bets...</span>';
+  h+='</div><div class="hint" style="margin-top:8px">Tap a spot to bet the selected chip. Tap any pocket on the wheel to see what it does. To take chips back, tap Take off, then tap a bet: each tap removes the selected chip amount (All in removes the whole bet). The % is your live chance on the current wheel. Once chips are down, every number and every wheel pocket shows what you would net if the ball lands there. The dots on the lines between numbers are splits (2 numbers) and the square dots on the corners cover 4 numbers. Tap one to see what it pays tonight. Col 1 is the line of numbers that starts with 1, Col 2 starts with 2, Col 3 starts with 3. Payouts rise as the House adds numbers to the table.</div></div>';
+  L.innerHTML=h;
+}
+function render(){
+  $('place').textContent=PLACES[G.night-1];
+  $('nightLbl').textContent='Night '+G.night+' of 8';
+  $('say').textContent=G.msg;$('result').textContent=G.res;
+  if(G.faceStage!==G.night){G.faceStage=G.night;$('face').innerHTML=dealerSVG(G.night);}
+  $('stats').innerHTML='<div><b>'+fmt(G.chips)+'</b><small>Chips</small></div><div><b>'+fmt(toll())+'</b><small>Tab due</small></div><div><b>'+G.spins+'</b><small>Spins left</small></div><div><b>'+G.wheel.length+'</b><small>Pockets</small></div>';
+  $('relics').innerHTML=G.relics.length?owned().map(e=>'<div class="relic'+(e[0].cosmic?' cosmic':'')+'"><b>'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</b>: '+e[0].desc+'</div>').join(''):'<div class="hint">Nothing yet.</div>';
+  const bet=G.mode==='bet'&&!locked();
+  $('eyeLine').innerHTML=(G.bets.luck&&G.lucky.length?'<span class="luckline">★ Lucky pockets: <b>'+luckyNames().join(', ')+'</b>.</span> ':'')+(G.watch.length&&G.mode!=='shop'?'👁 The Eye is watching <b>'+watchNames().join(', ')+'</b>. A ball that lands there pays nothing.':'');
+  $('heatBox').innerHTML=heatOn()?'<div class="heatlbl">Heat <b>'+G.heat+'</b> / 100'+(locked()?' · powers locked':G.heat>=50?' · he is watching closely':'')+' <button class="qm" data-act="mods">How Heat works</button></div><div class="heatbar"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:50%"></u><u style="left:75%"></u></div><div class="heattip"><span class="full"><b>No Heat:</b> honest wins of any size, and bets up to '+fmt(heatFree())+' a spin. <b>Goes up:</b> betting over '+fmt(heatFree())+', Magnet, Nudge, Extra Ball, and wins over '+fmt(winFreeChips())+' that came off a trick or a gold or copied pocket. <b>Streaks:</b> a 3rd win in a row adds '+HEAT.streak+', a 4th '+HEAT.streak*2+', and so on, but a streak alone stops at 74 (or 99). Only a trick crosses a line. <b>Comes down:</b> any spin that adds none (-'+HEAT.cool+'), losing a spin (-'+HEAT.lose+'), a new night (halved).</span><span class="brief"><b>Safe:</b> honest wins, bets to '+fmt(heatFree())+'. <b>Up:</b> bigger bets, powers, trick wins over '+fmt(winFreeChips())+', 3+ wins in a row (stops at 74 without a trick). <b>Down:</b> clean spin (-'+HEAT.cool+'), loss (-'+HEAT.lose+').</span></div>':'';
+  $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(G.armed==='magnet'?'Magnet: now tap a pocket':G.magnet>=0&&G.wheel[G.magnet]?'Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' (tap to cancel)':'Magnet ('+G.charges.magnet+')')+'</button>'+
+    '<button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(bet&&G.charges.ball>0?'':' disabled')+' title="Spin extra balls. Tap again to add more.">'+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':'')+' this spin':'Extra Ball ('+G.charges.ball+')')+'</button>'+
+    '<button disabled title="After the ball lands you may move it one pocket.">Nudge ('+G.charges.nudge+')</button>'+
+    '';
+  $('itemsBtn').textContent='Items ('+(G.relics.length+G.charges.magnet+G.charges.ball+G.charges.nudge)+')';
+  {const m=mult({gold:false});$('modBtn').textContent=(m===1?'Modifiers':'Wins x'+m.toFixed(2))+(has('streak')?' \u00B7 streak '+G.streak:'');$('modBtn').className=m===1?'':'hotm';}
+  $('fastBtn').textContent='Fast spins: '+(G.fast?'on':'off');
+  $('muteBtn').textContent='Sound: '+(muted?'off':'on');
+  {const bn=$('banner'),t=G.mode==='shop'&&G.armed!==null?(G.shop.tools[G.armed]&&G.shop.tools[G.armed].left>0?'Click another pocket ('+G.shop.tools[G.armed].left+' more)':'Click a pocket'):G.mode==='bet'&&G.armed==='magnet'?'Click a pocket':G.mode==='nudge'&&G.armed==='nudge'?'Click a glowing pocket':'';bn.textContent=t;bn.className=t?'show':'';}
+  if(G.watch.length&&G.mode!=='spinning'&&G.mode!=='shop'){const n=G.wheel.length,mid=G.watch[Math.floor(G.watch.length/2)];setTimeout(()=>lookAt(G.wAngle+(mid+0.5)*360/n),0);}
+  document.body.classList.toggle('fs',!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null));
+  renderWheel();renderLower();tentacles();saveGame();
+}
+
+/* ---------- input ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.bet){placeBet(b.dataset.bet);return;}
+  if(b.dataset.chip){const c=b.dataset.chip;G.chip=isNaN(+c)?c:+c;render();return;}
+  const a=b.dataset.act;if(!a)return;
+  switch(a){
+    case'begin':ac();store.del(SAVE_KEY);playerName()?pickStart():askName('begin');break;
+    case'resume':ac();playerName()?resumeGame():askName('resume');break;
+    case'name':setName(b.dataset.then);break;
+    case'start':G.relics.push(b.dataset.id);G.log.startRelic=b.dataset.id;$('overlay').className='';startNight();break;
+    case'restart':newGame();$('overlay').className='';applyDread();render();pickStart();$('overlay').className='show';break;
+    case'spin':spin();break;
+    case'clear':clearBets();break;
+    case'fs':G.fs=!G.fs;G.fsHold=false;render();break;
+    case'remove':G.remove=!G.remove;say(G.remove?'Tap any bet to pull chips off it. Each tap takes back the selected chip amount.':'Back to placing bets.');render();break;
+    case'rebet':rebet();break;
+    case'settle':endNight();break;
+    case'nudgeArm':if(G.mode==='nudge'){G.armed=G.armed==='nudge'?null:'nudge';say(G.armed?'Tap one of the glowing pockets near the ball.':'Nudge or let it ride?');render();if(G.armed)showWheel();}break;
+    case'n0':nudge(0);break;
+    case'magnet':if(G.magnet>=0){G.magnet=-1;G.armed=null;}else G.armed=G.armed==='magnet'?null:'magnet';if(G.armed)say('Magnet: click a pocket on the wheel.');render();break;
+    case'ball':G.useBall=(G.useBall+1)%(Math.min(G.charges.ball,3)+1);render();break;
+    case'relic':buyRelic(+b.dataset.i);break;
+    case'tool':buyTool(+b.dataset.i);break;
+    case'reroll':reroll();break;
+    case'next':logRun();G.night++;startNight();break;
+    case'items':showItems('mine');break;
+    case'invTab':showItems(b.dataset.tab);break;
+    case'mods':showItems('mods');break;
+    case'closeItems':$('overlay').className='';break;
+    case'copyRun':{const t=runText(),box=$('runBox'),show=()=>{box.style.display='block';box.value=t;box.focus();box.select();};try{navigator.clipboard.writeText(t).then(()=>{b.textContent='Copied';},show);}catch(e){show();}}break;
+    case'fast':G.fast=!G.fast;render();break;
+    case'mute':muted=!muted;setDrone();render();break;
+  }
+});
+let pd=null;
+$('wheel').addEventListener('pointerdown',e=>{pd=[e.clientX,e.clientY];});
+$('wheel').addEventListener('pointerup',e=>{
+  if(!pd||Math.hypot(e.clientX-pd[0],e.clientY-pd[1])>12){pd=null;return;}pd=null;
+  const W=$('wheel'),r=W.getBoundingClientRect(),x=(e.clientX-r.left-r.width/2)*400/r.width,y=(e.clientY-r.top-r.height/2)*400/r.height;
+  const rad=Math.hypot(x,y);if(rad<88||rad>198)return;
+  const n=G.wheel.length;let a=Math.atan2(y,x)*180/Math.PI+90-G.wAngle;a=((a%360)+360)%360;
+  pocketClick(Math.min(n-1,Math.floor(a/(360/n))));
+});
+document.addEventListener('contextmenu',e=>{const b=e.target.closest('[data-bet]');if(b){e.preventDefault();unbet(b.dataset.bet);}});
+document.addEventListener('mousemove',e=>{
+  if(!G||G.mode==='spinning'||G.watch.length)return;const w=$('wheel').getBoundingClientRect();
+  const dx=e.clientX-(w.left+w.width/2),dy=e.clientY-(w.top+w.height/2);lookAt(Math.atan2(dy,dx)*180/Math.PI+90);
+});
+setInterval(()=>{
+  if(!G||dread()<0.4||G.mode==='spinning')return;
+  const ls=document.querySelectorAll('.pl');if(!ls.length)return;
+  const el=ls[Math.floor(Math.random()*ls.length)];el.textContent=GLYPHS[Math.floor(Math.random()*GLYPHS.length)];
+  setTimeout(()=>{if(el.isConnected)el.textContent=el.dataset.t;},380);
+},Math.round(1100));
+
+let rz=null;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(G&&G.mode!=='intro'&&G.mode!=='over'){renderLower();tentacles();}},150);});
+document.addEventListener('scroll',()=>{if(G)tentacles();},{passive:true,capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){saveGame();postRun(true);}});
+window.addEventListener('pagehide',()=>{saveGame();postRun(true);});
+newGame();applyDread();render();intro();
+</script>
+</body>
+</html>
