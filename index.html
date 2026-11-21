@@ -534,7 +534,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v47',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v48',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -621,7 +621,9 @@ const perNight=k=>0;
 const pname=p=>p.void?'the Void':(lab(p.num)+' '+p.color+(p.gold?' (gold)':'')+(p.copy?' (branded copy)':''));
 
 /* ---------- flow ---------- */
-function say(t){G.msg=t;}
+const ADDR=['stranger','stranger','partner','friend','dear guest','little candle','my lamb','little thing'];
+const addr=()=>ADDR[Math.max(1,Math.min(G.night,8))-1],callYou=t=>typeof t==='string'?t.replace(/\bstranger\b/g,addr()):t;
+function say(t){G.msg=callYou(t);}
 function tip(t){G.tip=t;}
 function activeMods(){
   const L=[],esc=x=>String(x).replace(/"/g,'&quot;'),a=(t,c,act,hl)=>L.push({t,c:c||'',act:(act||'data-act="sheet" data-t="pay"')+(hl?' data-hl="'+esc(hl)+'"':'')}),sh=k=>'data-act="sheet" data-t="'+k+'"',gear='data-act="items"',rn=id=>RELICS.find(r=>r.id===id).name;
@@ -786,7 +788,7 @@ function peek(target){
 const CURSE_LIST=['Lose 10% of your chips','A dark pocket opens in the wheel','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'];
 const ICONS={'Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
 function dealerSay(lines,btn,title,info){
-  const o=$('overlay'),sp=(lines||[]).filter(Boolean),inf=(info||[]).filter(Boolean);
+  const o=$('overlay'),sp=(lines||[]).filter(Boolean).map(callYou),inf=(info||[]).filter(Boolean);
   o.innerHTML='<div class="modal dlg">'+(sp.length?'<div class="portrait">'+dealerSVG(G.night)+'</div>':'<div class="nicon">'+(ICONS[title]||'\u2726')+'</div>')+'<h3>'+(title||dealerName())+'</h3>'+
     sp.map(t=>'<p class="speech">'+t+'</p>').join('')+(inf.length?'<div class="'+(sp.length?'dinfo':'dinfo plain')+'">'+inf.map(t=>'<p>'+t+'</p>').join('')+'</div>':'')+
     '<button class="big" data-act="closeItems">'+(btn||'Continue')+'</button></div>';
