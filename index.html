@@ -192,6 +192,7 @@ button.bet:disabled,button.has:disabled{opacity:.85}
 .hint{font-size:12px;opacity:.7}
 .cap{font-family:'Special Elite',serif;font-size:12px;color:var(--ink);opacity:.8;margin-left:8px}
 .luckov{fill:#ffd84a;fill-opacity:.85;stroke:#fff3b0;stroke-width:1;pointer-events:none}
+.luckov.burn{fill:#140204;stroke:#ff5a2a;stroke-width:2}.luckov.burn+.lstar{fill:#ff5a2a}
 .lstar{fill:#3a2500;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 .spot.luckspot{background:#5a4208;border-color:#ffd84a;color:#ffe9a0}
 .board .spot.lucky{background-image:linear-gradient(rgba(255,216,74,.22),rgba(255,216,74,.22))}
@@ -398,7 +399,7 @@ const ZLAB={0:'0',100:'00',200:'000',300:'0000'};
 const lab=v=>ZLAB[v]||String(v);
 const plab=p=>p.void?'◉':lab(p.num);
 const pct=x=>{const v=x*100;return (v>0&&v<10?v.toFixed(1):Math.round(v))+'%';};
-const mk=n=>({num:n,color:ZLAB[n]?'green':RED.has(n)?'red':'black',gold:false,goldHits:0,void:false});
+const mk=n=>({num:n,color:ZLAB[n]?'green':(RED.has(n)||(n>36&&n%2===1))?'red':'black',gold:false,goldHits:0,void:false});
 const mkVoid=()=>({num:-1,color:'void',gold:false,void:true});
 const TOLLS=[60,120,240,480,960,1920,3840,7680];
 const GLYPHS=['⍟','◬','⌖','☍','⟁','ψ','∴','⌬'];
@@ -545,12 +546,14 @@ const tabFor=n=>{const c=Math.min(3,cnt('credit'));let t=c?r5(TOLLS[n-1]*(1-0.1*
 const toll=()=>G.night===8&&G.boss?Math.max(0,G.boss.hp):Math.max(tabFor(G.night),G.night===7?(G.tabFloor||0):0)+(G.tabAdd||0);
 const nextTab=()=>G.night+1===7?Math.max(tabFor(7),r5(G.chips*0.4)):G.night+1===8?Math.max(TOLLS[7],r5(G.chips*0.6)):tabFor(G.night+1);
 const reckOn=k=>G.night===7&&G.reck&&k===G.reck;
-const BRULES={number:{n:'Feed it a number',d:'Your biggest bet must be a straight bet on one number.'},dark:{n:'The dark opens',d:'Dark pockets are 4 times as likely to catch the ball.'},eye:{n:'Every eye open',d:'The Eye watches half the wheel.'}};
+const BRULES={number:{n:'Feed it a number',d:'Your biggest bet must be a straight bet on one number.'},dark:{n:'The dark opens',d:'Dark pockets are 4 times as likely to catch the ball.'},eye:{n:'Every eye open',d:'The Eye watches half the wheel.'},
+ spread:{n:'Spread thin',d:'Bet on at least 4 different spots, and no single bet can be more than a third of your total.'},allin:{n:'All or nothing',d:'Put at least half your chips on the table.'},inside:{n:'Inside only',d:'Only number, split and corner bets pay. Everything else pays nothing.'},
+ handsoff:{n:'Hands off',d:'Your tricks are locked this spin.'},double:{n:'Double or nothing',d:'Wins hit the House twice as hard. Losses heal it twice as much.'},stars:{n:'Burning stars',d:'The Lucky Draw stars burn black. A ball that lands on one swallows every bet, and nothing saves them.'}};
 const bossRule=r=>!!(G.night===8&&G.boss&&G.boss.rules.includes(r));
-function bossRules(){const B=G.boss;if(!B)return;const pool=Object.keys(BRULES).filter(r=>r!=='dark'||G.wheel.some(p=>p.void)),want=B.phase>=3?2:1;
+function bossRules(){const B=G.boss;if(!B)return;const pool=Object.keys(BRULES).filter(r=>(r!=='dark'||G.wheel.some(p=>p.void))&&(r!=='stars'||G.lucky.length)),want=B.phase>=3?2:1;
   let opts=pool.filter(r=>!(want===1&&B.rules.length===1&&B.rules[0]===r));if(opts.length<want)opts=pool;
   B.rules=opts.map(r=>[Math.random(),r]).sort((a,b)=>a[0]-b[0]).slice(0,want).map(x=>x[1]);}
-function bossCheck(net){const B=G.boss;if(!B)return null;B.hp=Math.min(B.max,Math.max(0,B.hp-net));
+function bossCheck(net){const B=G.boss;if(!B)return null;const dn=bossRule('double')?net*2:net;B.hp=Math.min(B.max,Math.max(0,B.hp-dn));
   if(B.hp<=0)return 'dead';let up=null;
   if(B.phase===1&&B.hp<=B.max*2/3){B.phase=2;G.spins+=2;up=2;}
   if(B.phase===2&&B.hp<=B.max/3){B.phase=3;G.spins+=2;up=3;}
@@ -565,7 +568,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v69',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v70',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -599,13 +602,14 @@ function matches(k,p){
   if(k==='red'||k==='black')return p.color===k||(has('eye')&&p.color==='green');
   if(v<=0||v>N)return false;
   if(k==='odd')return v%2===1; if(k==='even')return v%2===0;
-  if(k==='low')return v<=N/2; if(k==='high')return v>N/2;
+  if(k==='low')return v<=Math.floor(N/2); if(k==='high')return v>Math.floor(N/2);
   if(k==='t1')return v<=N/3; if(k==='t2')return v>N/3&&v<=2*N/3; if(k==='t3')return v>2*N/3;
   if(k==='k1')return v%3===1; if(k==='k2')return v%3===2; if(k==='k3')return v%3===0;
   return false;
 }
 function hitOdds(k,p){
   if(reckOn(k))return 0;
+  if(bossRule('inside')&&k!=='luck'&&!numsOf(k))return 0;
   if(p.void)return k==='void'?baseOdds(k):0;
   if(matches(k,p))return baseOdds(k);
   if(p.color==='green'&&has('preacher'))return cnt('preacher');
@@ -626,7 +630,7 @@ function payout(hits){
   let staked=0,back=0;
   for(const [k,st] of Object.entries(G.bets)){
     staked+=st;if(k==='luck')continue;let win=0,keep=false;
-    hits.forEach(h=>{const p=G.wheel[h.i],o=hitOdds(k,p);if(o>0){if(h.w===1)keep=true;if(!(h.w===1&&G.watch.includes(h.i)))win+=st*o*mult(p)*h.w;}else if(p.void&&h.w===1&&has('felt'))keep=true;});
+    hits.forEach(h=>{if(bossRule('stars')&&G.lucky.includes(h.i))return;const p=G.wheel[h.i],o=hitOdds(k,p);if(o>0){if(h.w===1)keep=true;if(!(h.w===1&&G.watch.includes(h.i)))win+=st*o*mult(p)*h.w;}else if(p.void&&h.w===1&&has('felt'))keep=true;});
     back+=(keep?st:0)+Math.round(win);
   }
   return{staked,back};
@@ -723,7 +727,7 @@ const streakHeat=net=>net>0&&G.streak>=2?HEAT.streak*(G.streak-1):0;
 const heatLine=()=>G.heat<75?74:99;
 const heatGain=()=>(1+0.5*cnt('wanted'))*(has('devil')?2:1),pardonReady=()=>has('pardon')&&!G.pardonUsed;
 const heatNext=(up,st,down)=>{let h=G.heat+up*heatGain();if(st)h=up>0?h+st:Math.max(h,Math.min(h+st,heatLine()));h=Math.max(0,Math.round(h-down));return has('devil')?Math.min(h,99):h;};
-const locked=()=>heatOn()&&G.heat>=75;
+const locked=()=>(heatOn()&&G.heat>=75)||bossRule('handsoff');
 // the Magnet only draws Heat if the ball lands on its pocket
 const heatPlan=()=>betHeat(totalBets())+HEAT.ball*Math.min(G.useBall,G.charges.ball,3);
 const doctored=p=>!!p&&!p.void&&(p.gold||p.copy);
@@ -859,9 +863,8 @@ function grow(){
   if(nt===4){add.push(mkVoid());msg=' A dark pocket has opened in the wheel. If the ball lands in it, it swallows every bet on the table.';}
   if(nt===5){for(let v=25;v<=36;v++)add.push(mk(v));G.N=36;msg=' The wheel has grown again. Thirty-six numbers now.';}
   if(nt===6){add.push(mkVoid(),mkVoid());msg=' Two more dark pockets have opened.';}
-  const echo=k=>{for(let j=0;j<k;j++)add.push(mk(1+Math.floor(Math.random()*36)));};
-  if(nt===7){add.push(mk(200));G.zeros.push(200);echo(9);for(let j=0;j<3;j++)add.push(mkVoid());msg=' The wheel has outgrown the table. A third zero, three more dark pockets, and nine numbers that were already there.';}
-  if(nt===8){add.push(mk(300));G.zeros.push(300);echo(20);for(let j=0;j<4;j++)add.push(mkVoid());msg=' The wheel no longer fits in the room. A fourth zero, four more dark pockets, and twenty numbers it has seen before.';}
+  if(nt===7){add.push(mk(200));G.zeros.push(200);for(let v=37;v<=45;v++)add.push(mk(v));G.N=45;for(let j=0;j<3;j++)add.push(mkVoid());msg=' The wheel has outgrown the table. A third zero, three more dark pockets, and nine numbers no table was built for: 37 to 45.';}
+  if(nt===8){add.push(mk(300));G.zeros.push(300);for(let v=46;v<=66;v++)add.push(mk(v));G.N=66;for(let j=0;j<4;j++)add.push(mkVoid());msg=' The wheel no longer fits in the room. A fourth zero, four more dark pockets, and numbers all the way to 66.';}
   add.forEach(p=>G.wheel.splice(Math.floor(Math.random()*(G.wheel.length+1)),0,p));
   G.house+=add.length;return msg;
 }
@@ -884,7 +887,7 @@ function startNight(){
   if(G.night===7&&(G.reck||G.tabFloor>tabFor(7)))NEXT_DLG=()=>dealerSay(['"Let\'s see what you\'ve been up to."'],'Understood','The Reckoning',['Silas opens his ledger and reads your whole run back to you.',G.reck?'You have put the most chips on <b>'+betName(G.reck)+'</b>. Tonight that bet is closed: it pays nothing.':'',G.tabFloor>tabFor(7)?'Tonight\'s tab is 40% of your chips: <b>'+fmt(toll())+'</b>.':'']);
   G.nightStart=G.chips;logRun(null,true);
 }
-const betName=k=>{const n=numsOf(k);if(n)return n.map(lab).join(', ');const N=G.N,t=Math.round(N/3);return {red:'Red',black:'Black',odd:'Odd',even:'Even',low:'1-'+N/2,high:(N/2+1)+'-'+N,luck:'the Lucky Draw',void:'the Void',t1:'1-'+t,t2:(t+1)+'-'+2*t,t3:(2*t+1)+'-'+N,k1:'1·4·7…',k2:'2·5·8…',k3:'3·6·9…'}[k]||'that bet';};
+const betName=k=>{const n=numsOf(k);if(n)return n.map(lab).join(', ');const N=G.N,t=Math.round(N/3);return {red:'Red',black:'Black',odd:'Odd',even:'Even',low:'1-'+Math.floor(N/2),high:(Math.floor(N/2)+1)+'-'+N,luck:'the Lucky Draw',void:'the Void',t1:'1-'+t,t2:(t+1)+'-'+2*t,t3:(2*t+1)+'-'+N,k1:'1·4·7…',k2:'2·5·8…',k3:'3·6·9…'}[k]||'that bet';};
 let AMT_CB=null;
 function askAmount(title,max,cb){
   if(max<=0){sfx.bad();return;}
@@ -960,6 +963,8 @@ function spin(){
   if(G.mode!=='bet')return;
   if(totalBets()<=0){say('Silas taps the felt. "Chips on the table first, stranger."');sfx.bad();render();return;}
   if(G.minBet&&totalBets()<G.minBet&&G.chips>0){tip('Table minimum tonight: '+fmt(G.minBet)+' a spin. You have '+fmt(totalBets())+' down.'+(G.chips+totalBets()<G.minBet?' Put everything you have on the table.':''));sfx.bad();render();return;}
+  if(bossRule('spread')){const v=Object.entries(G.bets).filter(x=>x[0]!=='luck').map(x=>x[1]),t=v.reduce((a,b)=>a+b,0);if(v.length<4||Math.max(...v)>t/3+0.01){tip('Spread thin: bet on at least 4 spots, none more than a third of your total ('+fmt(Math.floor(t/3))+').');sfx.bad();render();return;}}
+  if(bossRule('allin')&&totalBets()<(G.chips+totalBets())/2){tip('All or nothing: put at least '+fmt(Math.ceil((G.chips+totalBets())/2))+' on the table.');sfx.bad();render();return;}
   if(bossRule('number')){const e=Object.entries(G.bets),st=Math.max(0,...e.filter(x=>x[0][0]==='n').map(x=>x[1])),ot=Math.max(0,...e.filter(x=>x[0][0]!=='n').map(x=>x[1]));if(st<=0||st<ot){tip('The House wants your biggest bet on a single number.');sfx.bad();render();return;}}
   const bl=G.useBall>0&&G.charges.ball>0&&!locked();
   if(bl){sleight('ball',q=>doSpin(q));return;}
@@ -1079,7 +1084,7 @@ function resolve(){
       dlgS.push('"Saw that."');dlg.push('Silas makes a mark in his ledger. That is <b>Heat</b>. Every trick (Magnet, Nudge, Extra Ball) adds to it, and so does winning on a rigged pocket. A spin where you play clean cools it off.','At 75 Silas locks your tricks. At 100 he catches you: your winnings are gone, your chips are cut down to '+TABLINK+', and he keeps one of your relics.','Honest play never raises it, however big you bet or win.');}
   }
   let prize=null;const ls=G.bets.luck||0;
-  if(ls>0){const hitL=G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
+  if(ls>0){const hitL=!bossRule('stars')&&G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
     if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;notes.push('Lucky Draw hit: you got '+prize.name+'.');if(!title)title='Lucky Draw';dlg.push('The ball landed on a starred pocket.','You win '+prize.html.replace('class="term"','class="term on"')+'.','<span class="tinfo">'+prize.desc+'</span>',tier===3?'<i class="hint">Tap a name to see what it does.</i>':'');}
     else if(hitL)notes.push('The ball found a lucky pocket, but your Lucky Draw stake was under the first threshold.');
     else notes.push('Lucky Draw missed.');}
@@ -1321,7 +1326,7 @@ function renderWheel(){
       s+='<path class="nudgeov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';});
   }
   if(G.mode!=='shop')G.lucky.forEach(i=>{if(i>=n)return;const f=v=>v.toFixed(1),a0=i*seg,a1=a0+seg,A=polar(192,a0),B=polar(192,a1),C=polar(173,a1),D=polar(173,a0),M=polar(183,a0+seg/2);
-    s+='<path class="luckov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A173 173 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/><text class="lstar" x="'+f(M[0])+'" y="'+f(M[1])+'" style="font-size:'+Math.max(7,Math.min(14,seg*1.1)).toFixed(1)+'px">★</text>';});
+    s+='<path class="luckov'+(bossRule('stars')?' burn':'')+'" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A173 173 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/><text class="lstar" x="'+f(M[0])+'" y="'+f(M[1])+'" style="font-size:'+Math.max(7,Math.min(14,seg*1.1)).toFixed(1)+'px">★</text>';});
   if(G.mode!=='shop')G.watch.forEach(i=>{if(i>=n)return;const f=v=>v.toFixed(1),a0=i*seg,a1=a0+seg,A=polar(192,a0),B=polar(192,a1),C=polar(92,a1),D=polar(92,a0);
     s+='<path class="eyeov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';});
   if(G.mode!=='shop'&&G.watch.length&&G.watch[0]<n){const f=v=>v.toFixed(1),mid=G.watch[Math.floor(G.watch.length/2)],M=polar(183,(mid+0.5)*seg);
@@ -1434,7 +1439,7 @@ function renderLower(){
   const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);
   let h='<div class="felt'+(G.remove?' removing':'')+(G.night===8?' mouth':'')+'">'+(G.boss?'<div class="bossbar"><div class="bfill" style="width:'+(100*G.boss.hp/G.boss.max).toFixed(1)+'%"></div><span>THE HOUSE · '+fmt(G.boss.hp)+' / '+fmt(G.boss.max)+' · phase '+G.boss.phase+'</span></div><div class="brules">'+G.boss.rules.map(r=>'<b>'+BRULES[r].n+':</b> '+BRULES[r].d).join('<br>')+'</div>':'')+'<div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div>'+(G.tip&&G.mode!=='shop'?'<div class="tipline">'+G.tip+'</div>':'')+'<div class="betbar"><div class="chips">'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c==='custom'?'Custom':c)+'</button>').join('')+
     '</div><div class="tools"><button data-act="fs" class="'+(inFs?'on':'')+'" title="Full screen table"><span class="tl">'+(inFs?'Normal view':'Full screen')+'</span><span class="ti">'+(inFs?'\u2715':'\u26F6')+'</span></button><button data-act="remove" class="'+(G.remove?'rm':'')+'"'+(G.mode==='bet'&&totalBets()>0?'':' disabled')+'>'+(G.remove?'Removing':'Remove')+'</button><button data-act="rebet"'+(G.last&&G.mode==='bet'?'':' disabled')+'>Rebet</button><button data-act="clear"'+(G.mode==='bet'?'':' disabled')+'>Clear</button><button data-act="help" title="How to bet" class="qbtn">?</button></div></div>';
-  {const N=G.N,hf=N/2,t=N/3;
+  {const N=G.N,hf=Math.floor(N/2),t=N/3;
   if(G.mode==='bet'&&G.night===1&&!store.get('dmw_coach'))h+='<div class="coach">Tap a number or color to bet the selected chip. The dots between numbers bet on 2 or 4 at once. Tap the wheel to see what a pocket does.</div>';
   h+=boardHTML()+'<div class="outs">'+spot('red','Red','red')+spot('black','Black','black')+spot('odd','Odd')+spot('even','Even')+spot('low','1-'+hf)+spot('high',(hf+1)+'-'+N)+luckSpot()+spot('t1','1-'+t,'s3')+spot('t2',(t+1)+'-'+2*t,'s3')+spot('t3',(2*t+1)+'-'+N,'s3')+spot('k1','1·4·7…','s3')+spot('k2','2·5·8…','s3')+spot('k3','3·6·9…','s3')+(has('unwritten')?spot('void','The Void','voidspot'):'')+'</div>';}
   h+='<div class="row act">';
