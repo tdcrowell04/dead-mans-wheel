@@ -40,7 +40,8 @@ body.shake #app{animation:shk .5s}
 .pk.void{fill:#000;stroke:#7b5cff}
 .pk.gold{stroke:#ffd84a;stroke-width:3;fill-opacity:.9}
 .pk.mag{stroke:#fff;stroke-width:3}
-.bonl{display:block;font-size:1.05em}.bonl b{color:#8dff9a;font-size:1.25em}
+.bonl{display:block;font-size:1.05em}
+.term.on{color:#fff;text-decoration-style:solid}.tinfo{display:block;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;text-align:left}.bonl b{color:#8dff9a;font-size:1.25em}
 .brandm{fill:#ff8a2a;stroke:#2a1205;stroke-width:1;pointer-events:none}
 .brandm2{fill:none;stroke:#ff8a2a;stroke-width:1.6;pointer-events:none}
 .magov{fill:#fff;pointer-events:none;animation:magp 1s ease-in-out infinite}
@@ -535,7 +536,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v52',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v53',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -708,15 +709,22 @@ function moveLucky(){const n=G.wheel.length;if(n<6){G.lucky=[];return;}const c=M
 const luckSteps=()=>{const t=TOLLS[G.night-1];return[Math.max(5,r5(t*0.05)),r5(t*0.25),r5(t*0.6)];};
 const luckTier=st=>{const s=luckSteps();return st>=s[2]?3:st>=s[1]?2:st>=s[0]?1:0;};
 const TIERN=['','a trick','a relic','a rare relic and a trick'];
+const TRICKN={magnet:'Magnet',ball:'Extra Ball',nudge:'Nudge'};
+const TRICKD={magnet:()=>'Before a spin, pick a pocket. It becomes '+magStr()+' times as likely to be hit. Heat +'+HEAT.mag+' only if it hits.',ball:()=>'Spin an extra ball with the next spin. Every ball pays. Heat +'+HEAT.ball+' each.',nudge:()=>'After the ball lands, move it up to '+pls(reach(),'pocket')+'. Heat +'+HEAT.nudge+'.'};
+const termBtn=(k,label)=>'<button class="term" data-act="tinfo" data-k="'+k+'">'+label+'</button>';
+function termText(k){const [t,id]=k.split(':');if(t==='t')return '<b>'+TRICKN[id]+':</b> '+TRICKD[id]();const r=RELICS.find(x=>x.id===id);return '<b>'+r.name+':</b> '+rdesc(r);}
+function tinfo(btn){const m=btn.closest('.modal')||document;let box=m.querySelector('.tinfo');
+  if(!box){box=document.createElement('p');box.className='tinfo';const bt=m.querySelector('button.big');bt?bt.parentNode.insertBefore(box,bt):m.appendChild(box);}
+  box.innerHTML=termText(btn.dataset.k);m.querySelectorAll('.term.on').forEach(x=>x.classList.remove('on'));btn.classList.add('on');}
 function grantItem(tier){
-  const ch=()=>{const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)];G.charges[k]++;return k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';};
-  if(tier===1)return{name:'an extra '+ch(),desc:'One more use of that trick.'};
+  let ck='';const ch=()=>{const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)];G.charges[k]++;ck=k;return TRICKN[k];};
+  if(tier===1){const n=ch();return{name:'an extra '+n,html:'an extra '+termBtn('t:'+ck,n),desc:termText('t:'+ck)};}
   const cos=G.night>=4;let pool=RELICS.filter(r=>!(r.u&&has(r.id))&&(!r.cosmic||cos));
   if(tier===2)pool=pool.filter(r=>!r.u&&!r.cosmic);
   else{const rare=pool.filter(r=>r.u||r.cosmic||r.base>=45);if(rare.length)pool=rare;}
   const r=pool[Math.floor(Math.random()*pool.length)];G.relics.push(r.id);
-  if(tier===3){const c=ch();return{name:r.name+' and an extra '+c,desc:bdesc(r)};}
-  return{name:r.name,desc:bdesc(r)};
+  if(tier===3){const c=ch();return{name:r.name+' and an extra '+c,html:termBtn('r:'+r.id,r.name)+' and an extra '+termBtn('t:'+ck,c),desc:termText('r:'+r.id)};}
+  return{name:r.name,html:termBtn('r:'+r.id,r.name),desc:termText('r:'+r.id)};
 }
 const luckyNames=()=>[...new Set(G.lucky.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
 const watchNames=()=>[...new Set(G.watch.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
@@ -1006,7 +1014,7 @@ function resolve(){
   }
   let prize=null;const ls=G.bets.luck||0;
   if(ls>0){const hitL=G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
-    if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;notes.push('Lucky Draw hit: you got '+prize.name+'.');if(!title)title='Lucky Draw';dlg.push('The ball landed on a starred pocket.','You win <b>'+prize.name+'</b>.',prize.desc);}
+    if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;notes.push('Lucky Draw hit: you got '+prize.name+'.');if(!title)title='Lucky Draw';dlg.push('The ball landed on a starred pocket.','You win '+prize.html.replace('class="term"','class="term on"')+'.','<span class="tinfo">'+prize.desc+'</span>','<i class="hint">Tap a name to see what it does.</i>');}
     else if(hitL)notes.push('The ball found a lucky pocket, but your Lucky Draw stake was under the first threshold.');
     else notes.push('Lucky Draw missed.');}
   G.cold=false;const curses=[];
@@ -1042,7 +1050,7 @@ function endNight(){
   let notes='Tab paid: '+fmt(t)+'.';const bon=[],early=G.spins>0;
   if(early){const b=Math.min(G.spins,5)*r5(t*0.1);G.chips+=b;notes+=' Left early with '+G.spins+' spin'+(G.spins>1?'s':'')+' unused: +'+fmt(b)+'.';
     bon.push('<span class="bonl"><b>+'+fmt(b)+' chips</b> for '+pls(G.spins,'spin')+' left unused</span>');
-    for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)],kn=k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';G.charges[k]++;notes+=' Bounty Poster: +1 '+kn+'.';bon.push('<span class="bonl"><b>+1 '+kn+'</b> from your Bounty Poster</span>');}}
+    for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)],kn=k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';G.charges[k]++;notes+=' Bounty Poster: +1 '+kn+'.';bon.push('<span class="bonl"><b>+1 '+termBtn('t:'+k,kn)+'</b> from your Bounty Poster</span>');}}
   if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';bon.push('<span class="bonl"><b>+'+fmt(i)+' chips</b> of Claim Deed interest</span>');}
   if(G.night>=8){gameOver(true);return;}
   G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.res=notes;G.tip='';rollShop();
@@ -1428,6 +1436,7 @@ document.addEventListener('click',e=>{
     case'invTab':showItems(b.dataset.tab);break;
     case'mods':showItems('mods');break;
     case'peek':peek(b.dataset.target);break;
+    case'tinfo':tinfo(b);break;
     case'closeItems':$('overlay').className='';if(NEXT_DLG){const f=NEXT_DLG;NEXT_DLG=null;f();}break;
     case'copyRun':{const t=runText(),box=$('runBox'),show=()=>{box.style.display='block';box.value=t;box.focus();box.select();};try{navigator.clipboard.writeText(t).then(()=>{b.textContent='Copied';},show);}catch(e){show();}}break;
     case'fast':G.fast=!G.fast;render();break;
