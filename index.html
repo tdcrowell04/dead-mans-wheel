@@ -80,6 +80,8 @@ h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:v
 .betbar button{flex:1 1 0;min-width:0;padding:7px 3px;white-space:nowrap}
 .tools .ti{display:none}
 .betbar .qbtn{flex:0 0 auto;padding-left:12px;padding-right:12px}
+.hl{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;background:rgba(217,164,65,.16);animation:hlp 1.6s ease-out 2}
+@keyframes hlp{0%{background:rgba(217,164,65,.45)}100%{background:rgba(217,164,65,.12)}}
 .acthead{background:none;border:0;padding:0;margin:0;font-family:'Rye',serif;font-size:16px;color:var(--accent);display:flex;gap:8px;align-items:center;width:100%;text-align:left;border-radius:0}
 .acthead:hover:not(:disabled){border:0}
 .acthead b{font-weight:400;opacity:.8;font-size:13px}.acthead .chev{margin-left:auto;opacity:.8}
@@ -517,7 +519,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v40',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v41',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -604,23 +606,29 @@ const pname=p=>p.void?'the Void':(lab(p.num)+' '+p.color+(p.gold?' (gold)':''));
 function say(t){G.msg=t;}
 function tip(t){G.tip=t;}
 function activeMods(){
-  const L=[],a=(t,c,act)=>L.push({t,c:c||'',act:act||'data-act="sheet" data-t="pay"'}),sh=k=>'data-act="sheet" data-t="'+k+'"';
+  const L=[],esc=x=>String(x).replace(/"/g,'&quot;'),a=(t,c,act,hl)=>L.push({t,c:c||'',act:(act||'data-act="sheet" data-t="pay"')+(hl?' data-hl="'+esc(hl)+'"':'')}),sh=k=>'data-act="sheet" data-t="'+k+'"',gear='data-act="items"',rn=id=>RELICS.find(r=>r.id===id).name;
   const m=mult({gold:false});
-  if(Math.abs(m-1)>0.001)a('Wins x'+m.toFixed(2),m>1?'good':'bad');
-  if(has('streak')&&G.streak>0)a('Hot Streak: '+G.streak+' in a row','good');
-  if(G.cold)a('Cold hands: next win halved','bad');
-  if(G.tabAdd>0)a('Curse: tab +'+fmt(G.tabAdd),'bad',sh('zeros'));
-  if(locked())a('Tricks locked (Heat 75+)','bad',sh('heat'));else if(G.heat>=50)a('Silas is watching','bad',sh('heat'));
-  if(G.watch.length&&G.mode!=='shop')a('👁 '+watchNames().join(', ')+' pay nothing','bad',sh('eye'));
-  if(G.magnet>=0&&G.wheel[G.magnet])a('Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)),'good',sh('tricks'));
-  if(G.useBall)a('+'+G.useBall+' Extra Ball'+(G.useBall>1?'s':''),'good',sh('tricks'));
-  if(G.bets.luck){const t=luckTier(G.bets.luck);a('Lucky Draw: '+(t?'a star wins '+TIERN[t]:'stake too small'),t?'good':'dim',sh('lucky'));}
-  if(has('barrel')){const l=cnt('barrel')-(G.barrelUsed||0);a(l>0?'Double Barrel ready':'Double Barrel used tonight',l>0?'good':'dim');}
-  if(has('snake')){const l=cnt('snake')-(G.snakeUsed||0);a(l>0?'Snake Oil ready':'Snake Oil used tonight',l>0?'good':'dim');}
-  if(has('deck')){const l=cnt('deck')-(G.skRetry||0);a('Second Deck: '+Math.max(0,l)+' retr'+(l===1?'y':'ies')+' left',l>0?'good':'dim',sh('tricks'));}
-  if(has('credit'))a('Tabs '+10*Math.min(3,cnt('credit'))+'% lower','good');
-  {const g=G.wheel.filter(p=>p.gold).length;if(g)a(pls(g,'gold pocket'),'good');}
+  if(Math.abs(m-1)>0.001)a('Wins x'+m.toFixed(2),m>1?'good':'bad',null,'Your next win pays');
+  if(has('streak')&&G.streak>0)a('Hot Streak: '+G.streak+' in a row','good',null,'Hot Streak:');
+  if(G.cold)a('Cold hands: next win halved','bad',null,'Cold hands');
+  if(G.tabAdd>0)a('Curse: tab +'+fmt(G.tabAdd),'bad',sh('zeros'),'tab goes up');
+  if(locked())a('Tricks locked (Heat 75+)','bad',sh('heat'),'75:');else if(G.heat>=50)a('Silas is watching','bad',sh('heat'),'50:');
+  if(G.watch.length&&G.mode!=='shop')a('👁 '+watchNames().join(', ')+' pay nothing','bad',sh('eye'),'Watching now');
+  if(G.magnet>=0&&G.wheel[G.magnet])a('Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)),'good',sh('tricks'),'Magnet (');
+  if(G.useBall)a('+'+G.useBall+' Extra Ball'+(G.useBall>1?'s':''),'good',sh('tricks'),'Extra Ball (');
+  if(G.bets.luck){const t=luckTier(G.bets.luck);a('Lucky Draw: '+(t?'a star wins '+TIERN[t]:'stake too small'),t?'good':'dim',sh('lucky'),t?'wins '+TIERN[t]:'wins '+TIERN[1]);}
+  if(has('barrel')){const l=cnt('barrel')-(G.barrelUsed||0);a(l>0?'Double Barrel ready':'Double Barrel used tonight',l>0?'good':'dim',gear,rn('barrel'));}
+  if(has('snake')){const l=cnt('snake')-(G.snakeUsed||0);a(l>0?'Snake Oil ready':'Snake Oil used tonight',l>0?'good':'dim',gear,rn('snake'));}
+  if(has('deck')){const l=cnt('deck')-(G.skRetry||0);a('Second Deck: '+Math.max(0,l)+' retr'+(l===1?'y':'ies')+' left',l>0?'good':'dim',gear,rn('deck'));}
+  if(has('credit'))a('Tabs '+10*Math.min(3,cnt('credit'))+'% lower','good',gear,rn('credit'));
+  {const g=G.wheel.filter(p=>p.gold).length;if(g)a(pls(g,'gold pocket'),'good',null,'A win on gold');}
   return L;
+}
+function highlight(text){
+  if(!text)return;const o=$('overlay');if(!o)return;
+  const els=[...o.querySelectorAll('li,.now,.relic,p')];
+  const el=els.find(e=>e.textContent.includes(text));if(!el)return;
+  el.classList.add('hl');setTimeout(()=>{try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}},60);
 }
 function renderActive(){
   const box=$('activeBox');if(!box)return;
@@ -628,7 +636,7 @@ function renderActive(){
   box.className='box'+(col?' collapsed':'');
   box.innerHTML='<button class="acthead" data-act="actToggle" aria-expanded="'+!col+'">Active <b>'+(L.length+G.relics.length?'('+L.length+')':'')+'</b><span class="chev">'+(col?'\u25B8':'\u25BE')+'</span></button>'+
     '<div class="actlist">'+(L.length?L.map(x=>'<button class="am '+x.c+'" '+x.act+'>'+x.t+'</button>').join(''):'<span class="hint">Nothing in play right now.</span>')+
-    (G.relics.length?'<span class="actsep">Relics</span>'+owned().map(e=>'<button class="am relic'+(e[0].cosmic?' cosmic':'')+'" data-act="items">'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</button>').join(''):'')+'</div>';
+    (G.relics.length?'<span class="actsep">Relics</span>'+owned().map(e=>'<button class="am relic'+(e[0].cosmic?' cosmic':'')+'" data-act="items" data-hl="'+e[0].name.replace(/"/g,'&quot;')+'">'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</button>').join(''):'')+'</div>';
 }
 const QUIPS={
   low:['"Hmm..."','"Huh."','"Interesting."','"Lucky hands tonight."','Silas makes a small mark in his ledger.',"Silas's eyes drift to your sleeve.",'"Well now."','Silas wipes the same glass twice.'],
@@ -1358,7 +1366,7 @@ document.addEventListener('click',e=>{
     case'clear':clearBets();break;
     case'fs':{const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);if(inFs)G.fs=false;else{G.fs=true;G.fsHold=false;}render();}break;
     case'help':showHelp();break;
-    case'sheet':showSheet(b.dataset.t,!!b.dataset.back);break;
+    case'sheet':showSheet(b.dataset.t,!!b.dataset.back);highlight(b.dataset.hl);break;
     case'remove':G.remove=!G.remove;tip(G.remove?'Removing: tap a bet to pull chips off it. Each tap takes back the selected chip amount.':'Back to placing bets.');render();break;
     case'rebet':rebet();break;
     case'settle':endNight();break;
@@ -1372,7 +1380,7 @@ document.addEventListener('click',e=>{
     case'tool':buyTool(+b.dataset.i);break;
     case'reroll':reroll();break;
     case'next':logRun();G.night++;startNight();break;
-    case'items':showItems('mine');break;
+    case'items':showItems('mine');highlight(b.dataset.hl);break;
     case'invTab':showItems(b.dataset.tab);break;
     case'mods':showItems('mods');break;
     case'closeItems':$('overlay').className='';break;
