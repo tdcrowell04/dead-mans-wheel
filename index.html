@@ -370,7 +370,7 @@ const RELICS=[
  {id:'tooth',name:'Gold Tooth',base:40,desc:'Gold pockets multiply a win by 1 more (x3 instead of x2).'},
  {id:'deadman',name:"Dead Man's Hand",base:35,desc:'Straight bets on 1 and 8 pay 30% more.'},
  {id:'longshot',name:'The Long Shot',base:40,desc:'Straight number bets pay 20% more.'},
- {id:'undertaker',name:"Undertaker's Ledger",base:45,desc:"+2% payouts for every pocket your wheel is smaller than the House's wheel."},
+ {id:'undertaker',name:"Undertaker's Ledger",base:45,desc:"Every pocket you remove from the wheel (with a Pry Bar, say) makes all your wins pay 2% more."},
  {id:'reach',name:'Long Reach',base:40,desc:'Your Nudge can move the ball 1 pocket further.'},
  {id:'pull',name:'Mother Lode',base:40,desc:'Your Magnet pulls harder: +3 to its strength.'},
  {id:'heavy',name:'Heavy Hands',base:45,desc:'Pry Bar, Branding Iron and Paint Bucket can each be used on 1 more pocket of your choice.'},
@@ -464,11 +464,11 @@ const cnt=id=>G.relics.filter(x=>x===id).length;
 const magStr=()=>4+3*cnt('pull'),reach=()=>1+cnt('reach'),span=()=>1+cnt('heavy');
 const pls=(n,w)=>n+' '+w+(n===1?'':'s');
 const TOT={horseshoe:c=>'Color, odd/even and half bets pay '+25*c+'% more.',snake:c=>pls(c,'losing spin')+' each night refund half of what you lost.',tooth:c=>'Gold pockets pay x'+(2+c)+'.',
-  deadman:c=>'Straight bets on 1 and 8 pay '+30*c+'% more.',longshot:c=>'Straight number bets pay '+20*c+'% more.',undertaker:c=>'+'+2*c+"% payouts for every pocket your wheel is smaller than the House's.",
+  deadman:c=>'Straight bets on 1 and 8 pay '+30*c+'% more.',longshot:c=>'Straight number bets pay '+20*c+'% more.',undertaker:c=>'Every pocket you remove from the wheel makes all your wins pay '+2*c+'% more.',
   reach:c=>'Your Nudge can move the ball up to '+pls(1+c,'pocket')+'.',pull:c=>'Your Magnet makes a pocket '+(4+3*c)+' times as likely.',heavy:c=>'Pry Bar, Branding Iron and Paint Bucket each work on '+pls(1+c,'pocket')+'.',
   preacher:c=>'When the ball lands on a zero, every bet pays '+c+' to 1.',streak:c=>'Each win in a row adds +'+10*c+'% to payouts, up to 5 in a row.',watch:c=>'+'+pls(c,'spin')+' every night.',hunger:c=>'Each night it devours '+pls(c,'pocket')+'. Each one eaten grants +10% payouts forever.'};
 const rtext=(r,c)=>c>1&&TOT[r.id]?TOT[r.id](c):r.desc;
-const rdesc=r=>r.desc+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks.</i>');
+const rdesc=r=>r.desc+(r.id==='undertaker'?' <i class="hint">Removed so far: '+Math.max(0,G.house-G.wheel.length)+'.</i>':'')+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks.</i>');
 const toll=()=>TOLLS[G.night-1]+(G.tabAdd||0);
 const r5=x=>Math.max(5,Math.round(x/5)*5);
 const price=b=>r5(b*TOLLS[G.night-1]/60);
@@ -480,7 +480,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v35',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v36',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -565,7 +565,8 @@ const pname=p=>p.void?'the Void':(lab(p.num)+' '+p.color+(p.gold?' (gold)':''));
 
 /* ---------- flow ---------- */
 function say(t){G.msg=t;}
-const HEAT={early:2,free:1,bet:25,win:5,winEarly:10,winFree:2,cool:10,lose:5,mag:12,nudge:8,ball:8,tamper:8,streak:5};
+// Honest play never raises Heat: bet size and win streaks add nothing. Only tricks and rigged pockets do.
+const HEAT={early:2,free:1,bet:0,win:5,winEarly:10,winFree:2,cool:10,lose:5,mag:12,nudge:8,ball:8,tamper:8,streak:0};
 const heatOn=()=>true;
 const freeMult=()=>G.night<=2?HEAT.early:HEAT.free;
 const winMult=()=>G.night<=2?HEAT.winEarly:HEAT.win;
@@ -705,7 +706,7 @@ function startNight(){
   if(G.last){for(const k in G.last)if(deadBet(k))delete G.last[k];}
   G.heat=Math.floor((G.heat||0)/2);moveEye(null);moveLucky();
   G.mode='bet';G.res='';say(LINES[G.night-1]+extra);applyDread();render();
-  dealerSay([LINES[G.night-1],extra.trim(),G.night===1?'Win honest and I don\'t care how much. Cheat, or bet big, and I start watchin\'.':G.night===3?'I\'m watchin\' closer. From tonight my limit is the tab, not double: '+fmt(heatFree())+' a spin.':'',G.night===4?'The Eye has opened. Before every spin it watches a few pockets, marked in violet on the wheel and on the table. A ball that lands on a watched pocket pays nothing.':'','Tonight: '+fmt(toll())+' chips due, '+G.spins+' spins.'],'Place your bets');
+  dealerSay([LINES[G.night-1],extra.trim(),G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':'',G.night===4?'The Eye has opened. Before every spin it watches a few pockets, marked in violet on the wheel and on the table. A ball that lands on a watched pocket pays nothing.':'','Tonight: '+fmt(toll())+' chips due, '+G.spins+' spins.'],'Place your bets');
   G.nightStart=G.chips;logRun(null,true);
 }
 function takeBet(k){
@@ -833,7 +834,7 @@ function resolve(){
     else if(was<50&&G.heat>=50)notes.push('He is watching you closely now.');
     G.taught=G.taught||{};
     if(!caught&&G.heat>was&&!G.taught.heat){G.taught.heat=true;if(!title)title='Heat';
-      dlg.push('"Saw that." Silas makes a mark in his ledger.','That is <b>Heat</b>. Betting over '+fmt(heatFree())+' a spin and every trick (Magnet, Nudge, Extra Ball) add to it. A spin where you play clean cools it off.','At 75 he locks your tricks. At 100 he catches you: your winnings are gone, your chips are cut down to tonight\'s tab, and he keeps one of your relics.','A lucky streak alone never gets you caught. Only a trick does.');}
+      dlg.push('"Saw that." Silas makes a mark in his ledger.','That is <b>Heat</b>. Every trick (Magnet, Nudge, Extra Ball) adds to it, and so does winning on a rigged pocket. A spin where you play clean cools it off.','At 75 he locks your tricks. At 100 he catches you: your winnings are gone, your chips are cut down to tonight\'s tab, and he keeps one of your relics.','Honest play never raises it, however big you bet or win.');}
   }
   let prize=null;const ls=G.bets.luck||0;
   if(ls>0){const hitL=G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
@@ -965,7 +966,7 @@ function showItems(tab){
     if(dup.length)w+=row('Duplicated numbers',dup.join(', '));
     if(miss.length)w+=row('Removed numbers',miss.join(', '));
     if(painted.length)w+=row('Repainted',painted.join(', '));
-    h+='<h3>Wheel Changes</h3>'+(w?row('Size','Your wheel has '+G.wheel.length+' pockets. The House built '+G.house+'.')+w:none("None yet. Your wheel is exactly what the House built."));
+    h+='<h3>Wheel Changes</h3>'+(w?row('Size','Your wheel has '+G.wheel.length+' pockets.'+(G.house>G.wheel.length?' You have removed '+(G.house-G.wheel.length)+'.':''))+w:none("None yet. Your wheel is exactly what the House built."));
   }else if(tab==='mods'){
     const m=mult({gold:false});
     h+=(m!==1?'<div class="bigm">Your next win pays x'+m.toFixed(2)+'</div>':'')+
@@ -987,17 +988,17 @@ const SHEETS={
  bet:{t:'How to bet',d:'Placing chips, reading the table',f:()=>sec('Placing bets',['Pick a chip size, then tap a number, a color or a group. Tap again to add more.','The round dots between two numbers bet on both. The square dots where four meet bet on all four.','<b>Remove</b> takes chips back off a bet. <b>Rebet</b> repeats your last spin. <b>Clear</b> takes everything back.'])+
    sec('Reading the table',['Once chips are down, every spot and every pocket shows what you would win or lose if the ball lands there.','The % is your real chance on tonight\'s wheel.','Tap any pocket on the wheel to see what it does.'])+
    sec('The night',['You get '+(5+cnt('watch'))+' spins to cover the tab. Pay it at closing time or the run ends.','Covered early? Pay and leave, and get 10% of the tab back for each unused spin (up to 5).'])},
- heat:{t:'Heat',d:'Why Silas watches you, and what he does about it',f:()=>'<p class="lede">How sure Silas is that you are cheating. Honest wins of any size never raise it.</p>'+
-   '<div class="now">Heat now: <b>'+G.heat+'</b> / 100. Safe bet tonight: up to <b>'+fmt(heatFree())+'</b> a spin.</div>'+
-   sec('What raises it',['Betting over '+fmt(heatFree())+' a spin. The bigger the bet, the more it adds.','<b>Magnet</b> +'+HEAT.mag+' · <b>Nudge</b> +'+HEAT.nudge+' · <b>Extra Ball</b> +'+HEAT.ball+' each.','Winning on a <b>rigged pocket</b> (gold or copied) +'+HEAT.tamper+'.','A big win that came off a trick.','3 or more wins in a row: +'+HEAT.streak+', then +'+HEAT.streak*2+', then +'+HEAT.streak*3+'. A streak alone always stops short of the next line.'])+
+ heat:{t:'Heat',d:'Why Silas watches you, and what he does about it',f:()=>'<p class="lede">How sure Silas is that you are cheating. Honest play never raises it, however big you bet or win.</p>'+
+   '<div class="now">Heat now: <b>'+G.heat+'</b> / 100.</div>'+
+   sec('What raises it',['<b>Magnet</b> +'+HEAT.mag+' · <b>Nudge</b> +'+HEAT.nudge+' · <b>Extra Ball</b> +'+HEAT.ball+' each.','Winning on a <b>rigged pocket</b> (gold or copied) +'+HEAT.tamper+'.','A big win that came off a trick: every tab\'s worth over '+fmt(winFreeChips())+' adds '+winMult()+'.'])+
    sec('What lowers it',['A clean spin: -'+HEAT.cool+'.','A losing spin: -'+HEAT.lose+'.','Each new night cuts it in half.'])+
    sec('What happens',['<b>50:</b> he starts watching you closely.','<b>75:</b> your tricks are locked until it drops.','<b>100:</b> caught. Your winnings are gone, your chips are cut down to tonight\'s tab, and he keeps one of your relics. Heat drops to 50.'])+
-   sec('Staying out of trouble',['Keep bets at or under '+fmt(heatFree())+' and you stay invisible.','Follow a trick with a clean spin or two to cool off.','Check the Spin button: it shows the Heat a spin will add before you commit.','The safe bet is twice the tab on nights 1 and 2, then equal to the tab.'])},
+   sec('Staying out of trouble',['Save your tricks for the spins that matter.','Follow a trick with a clean spin or two to cool off.','Check the Spin button: it shows the Heat a spin will add before you commit.'])},
  pay:{t:'Payouts',d:'What each bet pays tonight, and your bonuses',f:()=>{const m=mult({gold:false}),num=v=>(Math.round(v*100)/100).toString(),parts=[];
    if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push('Hot Streak: '+G.streak+' in a row, +'+st*10*c+'%.');}
    if(G.cold)parts.push('Cold hands: your next win is halved.');
    if(G.hunger>0)parts.push('The Hunger: +'+G.hunger*10+'%.');
-   if(has('undertaker')){const k=Math.max(0,G.house-G.wheel.length);parts.push("Undertaker's Ledger: wheel "+k+' smaller than the House\'s, +'+k*2*cnt('undertaker')+'%.');}
+   if(has('undertaker')){const k=Math.max(0,G.house-G.wheel.length);parts.push("Undertaker's Ledger: "+pls(k,'pocket')+' removed, +'+k*2*cnt('undertaker')+'%.');}
    const rules=['preacher','eye','felt','unwritten','noneuclid','deed','snake'].filter(has).map(id=>{const r=RELICS.find(x=>x.id===id);return '<b>'+r.name+':</b> '+rtext(r,cnt(id));});
    return '<div class="now">'+(m===1?'No bonuses right now. Wins pay plain table odds.':'Your next win pays <b>x'+m.toFixed(2)+'</b>.')+'</div>'+(parts.length?li(parts):'')+
    sec('Tonight\'s table ('+G.N+' numbers)',['<b>Straight</b> (1 number): '+baseOdds('n2')+' to 1'+(has('deadman')?'. On 1 and 8: '+baseOdds('n1')+' to 1':'')+'.','<b>Split</b> (2): '+baseOdds('s1_2')+' to 1. <b>Corner</b> (4): '+baseOdds('c1_2_4_5')+' to 1.','<b>Thirds and columns:</b> 2 to 1.','<b>Red, black, odd, even, halves:</b> '+num(baseOdds('red'))+' to 1.',has('unwritten')?'<b>The Void:</b> 2 to 1.':'','Payouts grow as the table grows.'])+
@@ -1177,7 +1178,7 @@ function renderLower(){
     '</div><div class="tools"><button data-act="fs" class="'+(inFs?'on':'')+'" title="Full screen table"><span class="tl">'+(inFs?'Normal view':'Full screen')+'</span><span class="ti">'+(inFs?'\u2715':'\u26F6')+'</span></button><button data-act="remove" class="'+(G.remove?'rm':'')+'"'+(G.mode==='bet'&&totalBets()>0?'':' disabled')+'>'+(G.remove?'Removing':'Remove')+'</button><button data-act="rebet"'+(G.last&&G.mode==='bet'?'':' disabled')+'>Rebet</button><button data-act="clear"'+(G.mode==='bet'?'':' disabled')+'>Clear</button><button data-act="help" title="How to bet" class="qbtn">?</button></div></div>';
   {const N=G.N,hf=N/2,t=N/3;
   if(G.mode==='bet'&&G.night===1&&!store.get('dmw_coach'))h+='<div class="coach">Tap a number or color to bet the selected chip. The dots between numbers bet on 2 or 4 at once. Tap the wheel to see what a pocket does.</div>';
-  h+=boardHTML()+'<div class="outs">'+spot('red','Red','red')+spot('black','Black','black')+spot('odd','Odd')+spot('even','Even')+spot('low','1-'+hf)+spot('high',(hf+1)+'-'+N)+luckSpot()+spot('t1','1-'+t,'s3')+spot('t2',(t+1)+'-'+2*t,'s3')+spot('t3',(2*t+1)+'-'+N,'s3')+spot('k1','Col 1','s3')+spot('k2','Col 2','s3')+spot('k3','Col 3','s3')+(has('unwritten')?spot('void','The Void','voidspot'):'')+'</div>';}
+  h+=boardHTML()+'<div class="outs">'+spot('red','Red','red')+spot('black','Black','black')+spot('odd','Odd')+spot('even','Even')+spot('low','1-'+hf)+spot('high',(hf+1)+'-'+N)+luckSpot()+spot('t1','1-'+t,'s3')+spot('t2',(t+1)+'-'+2*t,'s3')+spot('t3',(2*t+1)+'-'+N,'s3')+spot('k1','1·4·7…','s3')+spot('k2','2·5·8…','s3')+spot('k3','3·6·9…','s3')+(has('unwritten')?spot('void','The Void','voidspot'):'')+'</div>';}
   h+='<div class="row act">';
   if(G.mode==='bet'){
     {const proj=heatOn()?Math.round(heatPlan()):0,cool=heatOn()&&proj===0&&G.heat>0&&totalBets()>0;
