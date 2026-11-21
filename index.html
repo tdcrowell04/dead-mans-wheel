@@ -84,6 +84,7 @@ h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:v
 @keyframes hlp{0%{background:rgba(217,164,65,.45)}100%{background:rgba(217,164,65,.12)}}
 .dinfo{margin:12px 0 4px;padding:8px 12px;border:1px dashed var(--edge);border-radius:8px;background:rgba(0,0,0,.25)}
 .dinfo p{margin:5px 0}.dinfo.plain{border:0;background:none;padding:0}
+.clist{text-align:left;display:inline-block;margin:2px 0 4px;padding-left:20px}.clist li{margin:3px 0}
 .nicon{font-size:46px;line-height:1.1;color:var(--accent);margin:4px 0 2px}
 .acthead{background:none;border:0;padding:0;margin:0;font-family:'Rye',serif;font-size:16px;color:var(--accent);display:flex;gap:8px;align-items:center;width:100%;text-align:left;border-radius:0}
 .acthead:hover:not(:disabled){border:0}
@@ -522,7 +523,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v42',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v43',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -757,6 +758,8 @@ function dealerSVG(stage){
   o+='</g><circle cx="100" cy="100" r="96" fill="none" stroke="'+L('#d9a441','#7df0c8')+'" stroke-width="4"/></svg>';
   return o;
 }
+let NEXT_DLG=null;
+const CURSE_LIST=['Lose 10% of your chips','A dark pocket opens in the wheel','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'];
 const ICONS={'Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
 function dealerSay(lines,btn,title,info){
   const o=$('overlay'),sp=(lines||[]).filter(Boolean),inf=(info||[]).filter(Boolean);
@@ -779,7 +782,7 @@ function curse(){const c=CURSES.filter(x=>x.ok()),x=c[Math.floor(Math.random()*c
 
 function grow(){
   const add=[],nt=G.night;let msg='';
-  if(nt===3){for(let v=13;v<=24;v++)add.push(mk(v));add.push(mk(100));G.N=24;G.zeros.push(100);msg=' The wheel is bigger tonight. Twelve new numbers, and a second zero. And from tonight the zeros bite: land on one and the House lays a curse on you. Tap a zero on the wheel to see what it can do.';}
+  if(nt===3){for(let v=13;v<=24;v++)add.push(mk(v));add.push(mk(100));G.N=24;G.zeros.push(100);msg=' The wheel is bigger tonight. Twelve new numbers, and a second zero.';}
   if(nt===4){add.push(mkVoid());msg=' A dark pocket has opened in the wheel. If the ball lands in it, it swallows every bet on the table.';}
   if(nt===5){for(let v=25;v<=36;v++)add.push(mk(v));G.N=36;msg=' The wheel has grown again. Thirty-six numbers now.';}
   if(nt===6){add.push(mkVoid(),mkVoid());msg=' Two more dark pockets have opened.';}
@@ -797,6 +800,7 @@ function startNight(){
   G.heat=Math.floor((G.heat||0)/2);moveEye(null);moveLucky();
   G.mode='bet';G.res='';G.tip='';say(LINES[G.night-1]+extra);applyDread();render();
   dealerSay([LINES[G.night-1],G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays nothing.':'','<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins.']);
+  if(G.night===3)NEXT_DLG=()=>dealerSay([],'Understood','Zero curse',['From tonight, the zeros bite.','Land on a zero and the House lays a curse on you. It will be one of these:','<ul class="clist">'+CURSE_LIST.map(c=>'<li>'+c+'</li>').join('')+'</ul>','Tap a zero on the wheel any time to see this again.']);
   G.nightStart=G.chips;logRun(null,true);
 }
 function takeBet(k){
@@ -989,7 +993,7 @@ function resolve(){
   const zl=[...new Set(G.balls.map(b=>G.wheel[b.idx]).filter(p=>p&&!p.void&&p.color==='green').map(p=>lab(p.num)))].join(' and ')||'a zero';
   const cz=curses.map(()=>curse());let changed=false;
   if(cz.length){if(G.log&&G.log.spins.length)G.log.spins[G.log.spins.length-1].curses=cz.map(c=>c.id);if(cz.some(c=>c.id==='void'||c.id==='zero')){G.balls=[];G.hits=[];changed=true;}notes.push('Zero curse: '+cz.map(c=>c.text).join(' '));
-    if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>. From night 3, landing on a zero lays a curse on you.');cz.forEach(c=>dlg.push('<b class="cursel">Curse:</b> '+c.text));}
+    if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>.');cz.forEach(c=>dlg.push('<b class="cursel">Curse:</b> '+c.text));}
   moveEye(net>0&&!changed?landed:null);moveLucky();
   const head=caught?(caught.took>0?'Won '+fmt(caught.took)+', but Silas caught you. Winnings gone'+(caught.cut>0?', and '+fmt(caught.cut)+' more.':'.'):'Silas caught you.'+(caught.cut>0?' Cut down to the tab: -'+fmt(caught.cut)+'.':'')):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.';
   where=where.charAt(0).toUpperCase()+where.slice(1);
@@ -1389,7 +1393,7 @@ document.addEventListener('click',e=>{
     case'items':showItems('mine');highlight(b.dataset.hl);break;
     case'invTab':showItems(b.dataset.tab);break;
     case'mods':showItems('mods');break;
-    case'closeItems':$('overlay').className='';break;
+    case'closeItems':$('overlay').className='';if(NEXT_DLG){const f=NEXT_DLG;NEXT_DLG=null;f();}break;
     case'copyRun':{const t=runText(),box=$('runBox'),show=()=>{box.style.display='block';box.value=t;box.focus();box.select();};try{navigator.clipboard.writeText(t).then(()=>{b.textContent='Copied';},show);}catch(e){show();}}break;
     case'fast':G.fast=!G.fast;render();break;
     case'mute':muted=!muted;setDrone();render();break;
