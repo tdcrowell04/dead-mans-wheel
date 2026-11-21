@@ -539,7 +539,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v58',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v59',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -638,7 +638,7 @@ function activeMods(){
   if(has('sore')&&G.lstreak>0)a('Sore Loser: +'+15*cnt('sore')*Math.min(G.lstreak,5)+'%','good',null,'Sore Loser:');
   if(has('jailbird')&&G.jailNight>G.night)a('Jailbird: next tab -'+jailPct()+'%','good',gear,'Jailbird');
   if(G.cold)a('Cold hands: next win halved','bad',null,'Cold hands');
-  if(has('outlaw'))a(G.heat>=50?"Outlaw's Bandana: +"+25*cnt('outlaw')+'%':"Outlaw's Bandana: needs Heat 50",G.heat>=50?'good':'dim',null,"Outlaw's Bandana:");
+  if(has('outlaw'))a(G.heat>=50?"Outlaw's Bandana: +"+25*cnt('outlaw')+'%':"Outlaw's Bandana: +"+25*cnt('outlaw')+'% at Heat 50',G.heat>=50?'good':'dim',null,"Outlaw's Bandana:");
   if(G.tabAdd>0)a('Curse: tab +'+fmt(G.tabAdd),'bad',sh('zeros'),'tab goes up');
   if(locked())a('Tricks locked (Heat 75+)','bad',sh('heat'),'75:');else if(G.heat>=50)a('Silas is watching','bad',sh('heat'),'50:');
   if(G.watch.length&&G.mode!=='shop')a('👁 '+watchNames().join(', ')+' pay nothing','bad',sh('eye'),'Watching now');
@@ -1182,7 +1182,7 @@ const SHEETS={
    if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push('Hot Streak: '+G.streak+' in a row, +'+st*10*c+'%.');}
    if(has('sore')){const c=cnt('sore'),st=Math.min(G.lstreak||0,5);parts.push('Sore Loser: '+(G.lstreak||0)+' loss'+((G.lstreak||0)===1?'':'es')+' in a row, +'+st*15*c+'%.');}
    if(G.cold)parts.push('Cold hands: your next win is halved.');
-   if(has('outlaw'))parts.push("Outlaw's Bandana: "+(G.heat>=50?'Heat is '+G.heat+', so +'+25*cnt('outlaw')+'%.':'off until your Heat reaches 50.'));
+   if(has('outlaw'))parts.push("Outlaw's Bandana: +"+25*cnt('outlaw')+'% to all wins while your Heat is 50 or more. '+(G.heat>=50?'On now.':'Off now (Heat '+G.heat+').'));
    if(G.hunger>0)parts.push('The Hunger: +'+G.hunger*10+'%.');
    if(has('undertaker')){const k=Math.max(0,G.house-G.wheel.length);parts.push("Undertaker's Ledger: "+pls(k,'pocket')+' removed, +'+k*2*cnt('undertaker')+'%.');}
    const rules=['preacher','eye','felt','unwritten','noneuclid','deed','snake'].filter(has).map(id=>{const r=RELICS.find(x=>x.id===id);return '<b>'+r.name+':</b> '+rtext(r,cnt(id));});
