@@ -521,6 +521,7 @@ const TOT={horseshoe:c=>'Color, odd/even and half bets pay '+25*c+'% more.',snak
   deck:c=>c+' fumbled sleight checks a night can be retried.',tongue:c=>'A perfect sleight also cools Heat by '+5*c+'.',rabbit:c=>'Lucky Draw stars '+c+' more pockets every spin.',
   barrel:c=>'Your first '+c+' winning spins each night pay double.',credit:c=>'Every tab is '+10*Math.min(3,c)+'% lower'+(c>3?' (only 3 count)':'')+'.',bounty:c=>'Each time you pay the tab with spins to spare, gain '+c+' random tricks.',jailbird:c=>'When Silas catches you, your next tab is '+Math.min(75,25*c)+'% lower.',sore:c=>'Each losing spin in a row adds +'+15*c+'% to your next win, up to 5 in a row. A win resets it.',hunger:c=>'Each night it devours '+pls(c,'pocket')+'. Each one eaten grants +10% payouts forever.'};
 const SHIELD=' It also shields you from zero curses.',bdesc=r=>r.id==='preacher'&&G&&G.night>=3?r.desc+SHIELD:r.desc;
+const curTxt=r=>{const t=rtext(r,cnt(r.id)),p=t.match(/(\d+)% (\w+)/),x=t.match(/x(\d+)/);const per={streak:' per win in a row',sore:' per loss in a row',undertaker:' per pocket removed',hunger:' per pocket eaten'}[r.id]||'';return p?'Current: '+(/lower|slower|less/.test(p[2])?'-':'+')+p[1]+'%'+per:x?'Current: x'+x[1]:'You have '+cnt(r.id)+'.';};
 const rtext=(r,c)=>c>1&&TOT[r.id]?TOT[r.id](c)+(r.id==='preacher'&&G.night>=3?SHIELD:''):bdesc(r);
 const rdesc=r=>bdesc(r)+(r.id==='undertaker'?' <i class="hint">Removed so far: '+Math.max(0,G.house-G.wheel.length)+'.</i>':'')+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks'+(r.cap?' up to '+r.cap:'')+'.</i>');
 const jailPct=()=>G.jailPctV||25;
@@ -536,7 +537,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v56',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v57',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1347,7 +1348,7 @@ function renderLower(){
     const rc=restockCost();
     const nx=tabFor(G.night+1),short=nx-G.chips;
     L.innerHTML='<div class="felt"><div class="nexttab'+(short>0?' bad':'')+'">Next tab: <b>'+fmt(nx)+'</b> chips. You have <b>'+fmt(G.chips)+'</b>.'+(short>0?' You are '+fmt(short)+' short, so you will have to win it at the table.':' You are covered by '+fmt(-short)+'.')+'</div>'+(G.tip?'<div class="tipline">'+G.tip+'</div>':'')+'<h3>Relics <span class="cap">'+capTxt(G.bought.r)+'</span></h3><div class="shop">'+
-      G.shop.relics.map((it,i)=>{const r=RELICS.find(x=>x.id===it.id),cap=!it.sold&&!canBuy('r');return '<button class="card'+(r.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+'" data-act="relic" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+r.name+'</b>'+rdesc(r)+(cnt(r.id)?' <i class="hint">You have '+cnt(r.id)+'. With this one: '+rtext(r,cnt(r.id)+1)+'</i>':'')+'<span class="p">'+(it.sold?'Sold':cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
+      G.shop.relics.map((it,i)=>{const r=RELICS.find(x=>x.id===it.id),cap=!it.sold&&!canBuy('r');return '<button class="card'+(r.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+'" data-act="relic" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+r.name+'</b>'+rdesc(r)+(cnt(r.id)?' <i class="hint">'+curTxt(r)+'</i>':'')+'<span class="p">'+(it.sold?'Sold':cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
       '</div><h3>Wheel Tools <span class="cap">'+capTxt(G.bought.t)+'</span></h3><div class="shop">'+
       G.shop.tools.map((it,i)=>{const T=TOOLS[it.type];if(!T.target)return '';const cap=!it.sold&&!(it.left>0)&&!canBuy('t');return '<button class="card'+(T.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+(G.armed===i?' on':'')+'" data-act="tool" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+T.name+'</b>'+T.desc+'<span class="p">'+(it.sold?'Sold':it.left>0?'Paid. '+it.left+' more use'+(it.left===1?'':'s'):cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
       '</div><h3>Tricks <span class="cap">'+capTxt(G.bought.s)+'</span></h3><div class="hint" style="margin-bottom:6px">One-time use. They do not come back each night.</div><div class="shop">'+
