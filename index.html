@@ -423,6 +423,8 @@ const RELICS=[
  {id:'credit',name:'Saloon Credit',base:55,desc:'Every tab is 10% lower. Up to 3 count.'},
  {id:'tinstar',name:'Tin Star',base:45,u:true,desc:'When Silas catches you, he takes your winnings but keeps no relic.'},
  {id:'bounty',name:'Bounty Poster',base:35,desc:'Each time you pay the tab with spins to spare, gain a random trick.'},
+ {id:'jailbird',name:'Jailbird',base:35,desc:'When Silas catches you, your next tab is 25% lower.'},
+ {id:'sore',name:'Sore Loser',base:45,desc:'Each losing spin in a row adds +15% to your next win, up to 5 in a row. A win resets it.'},
  {id:'felt',name:'The Thing in the Felt',base:70,cosmic:true,u:true,desc:'Void pockets no longer devour your bets. When a ball lands in one, every bet comes back to you.'},
  {id:'unwritten',name:'The Unwritten Square',base:55,cosmic:true,u:true,desc:'A new square appears on the table. It lets you bet on the Void pockets, 2 to 1.'},
  {id:'eye',name:'The Eye That Counts',base:65,cosmic:true,u:true,desc:'Zeros count as both red and black.'},
@@ -513,10 +515,12 @@ const TOT={horseshoe:c=>'Color, odd/even and half bets pay '+25*c+'% more.',snak
   reach:c=>'Your Nudge can move the ball up to '+pls(1+c,'pocket')+'.',pull:c=>'Your Magnet makes a pocket '+(4+3*c)+' times as likely.',heavy:c=>'Pry Bar, Branding Iron and Paint Bucket each work on '+pls(1+c,'pocket')+'.',
   preacher:c=>'When the ball lands on a zero, every bet pays '+c+' to 1.',streak:c=>'Each win in a row adds +'+10*c+'% to payouts, up to 5 in a row.',watch:c=>'+'+pls(c,'spin')+' every night.',gloves:c=>'The green zone in a sleight check is '+30*c+'% wider.',hourglass:c=>'The needle in a sleight check moves '+Math.min(60,20*c)+'% slower.',
   deck:c=>c+' fumbled sleight checks a night can be retried.',tongue:c=>'A perfect sleight also cools Heat by '+5*c+'.',rabbit:c=>'Lucky Draw stars '+c+' more pockets every spin.',
-  barrel:c=>'Your first '+c+' winning spins each night pay double.',credit:c=>'Every tab is '+10*Math.min(3,c)+'% lower'+(c>3?' (only 3 count)':'')+'.',bounty:c=>'Each time you pay the tab with spins to spare, gain '+c+' random tricks.',hunger:c=>'Each night it devours '+pls(c,'pocket')+'. Each one eaten grants +10% payouts forever.'};
-const rtext=(r,c)=>c>1&&TOT[r.id]?TOT[r.id](c):r.desc;
-const rdesc=r=>r.desc+(r.id==='undertaker'?' <i class="hint">Removed so far: '+Math.max(0,G.house-G.wheel.length)+'.</i>':'')+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks.</i>');
-const tabFor=n=>{const c=Math.min(3,cnt('credit'));return c?r5(TOLLS[n-1]*(1-0.1*c)):TOLLS[n-1];};
+  barrel:c=>'Your first '+c+' winning spins each night pay double.',credit:c=>'Every tab is '+10*Math.min(3,c)+'% lower'+(c>3?' (only 3 count)':'')+'.',bounty:c=>'Each time you pay the tab with spins to spare, gain '+c+' random tricks.',jailbird:c=>'When Silas catches you, your next tab is '+Math.min(75,25*c)+'% lower.',sore:c=>'Each losing spin in a row adds +'+15*c+'% to your next win, up to 5 in a row. A win resets it.',hunger:c=>'Each night it devours '+pls(c,'pocket')+'. Each one eaten grants +10% payouts forever.'};
+const SHIELD=' It also shields you from zero curses.',bdesc=r=>r.id==='preacher'&&G&&G.night>=3?r.desc+SHIELD:r.desc;
+const rtext=(r,c)=>c>1&&TOT[r.id]?TOT[r.id](c)+(r.id==='preacher'&&G.night>=3?SHIELD:''):bdesc(r);
+const rdesc=r=>bdesc(r)+(r.id==='undertaker'?' <i class="hint">Removed so far: '+Math.max(0,G.house-G.wheel.length)+'.</i>':'')+(r.u?' <i class="hint">One of a kind.</i>':' <i class="hint">Stacks.</i>');
+const jailPct=()=>G.jailPctV||25;
+const tabFor=n=>{const c=Math.min(3,cnt('credit'));let t=c?r5(TOLLS[n-1]*(1-0.1*c)):TOLLS[n-1];if(G.jailNight===n)t=r5(t*(1-jailPct()/100));return t;};
 const toll=()=>tabFor(G.night)+(G.tabAdd||0);
 const r5=x=>Math.max(5,Math.round(x/5)*5);
 const price=b=>r5(b*TOLLS[G.night-1]/60);
@@ -528,7 +532,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v45',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v46',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -576,6 +580,7 @@ function hitOdds(k,p){
 function mult(p){
   let m=p.gold?2+cnt('tooth'):1;
   m*=1+0.1*cnt('streak')*Math.min(G.streak,5);
+  m*=1+0.15*cnt('sore')*Math.min(G.lstreak||0,5);
   m*=1+0.1*G.hunger;
   if(has('outlaw')&&G.heat>=50)m*=1+0.25*cnt('outlaw');
   m*=1+0.02*cnt('undertaker')*Math.max(0,G.house-G.wheel.length);
@@ -620,6 +625,8 @@ function activeMods(){
   const m=mult({gold:false});
   if(Math.abs(m-1)>0.001)a('Wins x'+m.toFixed(2),m>1?'good':'bad',null,'Your next win pays');
   if(has('streak')&&G.streak>0)a('Hot Streak: '+G.streak+' in a row','good',null,'Hot Streak:');
+  if(has('sore')&&G.lstreak>0)a('Sore Loser: +'+15*cnt('sore')*Math.min(G.lstreak,5)+'%','good',null,'Sore Loser:');
+  if(has('jailbird')&&G.jailNight>G.night)a('Jailbird: next tab -'+jailPct()+'%','good',gear,'Jailbird');
   if(G.cold)a('Cold hands: next win halved','bad',null,'Cold hands');
   if(has('outlaw'))a(G.heat>=50?"Outlaw's Bandana: +"+25*cnt('outlaw')+'%':"Outlaw's Bandana: needs Heat 50",G.heat>=50?'good':'dim',null,"Outlaw's Bandana:");
   if(G.tabAdd>0)a('Curse: tab +'+fmt(G.tabAdd),'bad',sh('zeros'),'tab goes up');
@@ -702,8 +709,8 @@ function grantItem(tier){
   if(tier===2)pool=pool.filter(r=>!r.u&&!r.cosmic);
   else{const rare=pool.filter(r=>r.u||r.cosmic||r.base>=45);if(rare.length)pool=rare;}
   const r=pool[Math.floor(Math.random()*pool.length)];G.relics.push(r.id);
-  if(tier===3){const c=ch();return{name:r.name+' and an extra '+c,desc:r.desc};}
-  return{name:r.name,desc:r.desc};
+  if(tier===3){const c=ch();return{name:r.name+' and an extra '+c,desc:bdesc(r)};}
+  return{name:r.name,desc:bdesc(r)};
 }
 const luckyNames=()=>[...new Set(G.lucky.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
 const watchNames=()=>[...new Set(G.watch.map(i=>G.wheel[i]).filter(Boolean).map(p=>p.void?'a Void':lab(p.num)))];
@@ -814,7 +821,7 @@ function startNight(){
   G.heat=Math.floor((G.heat||0)/2);moveEye(null);moveLucky();
   G.mode='bet';G.res='';G.tip='';say(LINES[G.night-1]+extra);applyDread();render();
   dealerSay([LINES[G.night-1],G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays nothing.':'','<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins.']);
-  if(G.night===3)NEXT_DLG=()=>dealerSay([],'Understood','Zero curse',['From tonight, the zeros bite.','Land on a zero and the House lays a curse on you. It will be one of these:','<ul class="clist">'+CURSE_LIST.map(c=>'<li>'+c+'</li>').join('')+'</ul>','Tap a zero on the wheel any time to see this again.']);
+  if(G.night===3)NEXT_DLG=()=>dealerSay([],'Understood','Zero curse',['From tonight, the zeros bite.','Land on a zero and the House lays a curse on you. It will be one of these:','<ul class="clist">'+CURSE_LIST.map(c=>'<li>'+c+'</li>').join('')+'</ul>','Tap a zero on the wheel any time to see this again.',has('preacher')?"<b>Your Preacher's Coin grows warm.</b> It shields you from every zero curse.":'']);
   G.nightStart=G.chips;logRun(null,true);
 }
 function takeBet(k){
@@ -977,13 +984,14 @@ function resolve(){
       G.taught=G.taught||{};G.taught.heat=true;
       const took=Math.max(0,net);if(took>0){back-=took;net=0;}
       const cut=Math.max(0,G.chips+back-toll());if(cut>0){back-=cut;net-=cut;}
-      let lost='';
+      let lost='';const jb=cnt('jailbird');
       if(has('tinstar')){lost='Your Tin Star gets you off light: Silas keeps no relic.';caught={took,cut,lost:'none'};}
-      else if(G.relics.length){const id=G.relics.splice(Math.floor(Math.random()*G.relics.length),1)[0];lost='Silas takes your '+RELICS.find(r=>r.id===id).name+'.';caught={took,cut,lost:id};}
+      else if(G.relics.length){const id=G.relics.splice(Math.floor(Math.random()*G.relics.length),1)[0];lost='Silas takes your '+RELICS.find(r=>r.id===id).name.replace(/^The /,'')+'.';caught={took,cut,lost:id};}
       else if(G.wheel.some(p=>p.gold)){G.wheel.forEach(p=>{p.gold=false;p.goldHits=0;});lost='Silas scrapes every bit of gold off your wheel.';caught={took,cut,lost:'gold'};}
       else caught={took,cut,lost:'none'};
+      let jail='';if(jb&&G.night<8){G.jailNight=G.night+1;G.jailPctV=Math.min(75,25*jb);jail='Jailbird: tomorrow\'s tab is '+G.jailPctV+'% lower.';}
       G.heat=50;title='Caught';
-      dlgS.push(G.night<=2?"\"You don't think we get cheaters in here all the time? I know how to spot 'em.\"":G.night<=5?"\"I'll hand it to you, stranger. You cheated your way further than most ever do. But I still caught you.\"":G.night<=7?'"You cheat beautifully. I have enjoyed watching every trick. I also caught every one."':'"YOU CHEATED WELL, LITTLE THING. IT SAW ALL OF IT."');dlg.push(took>0?'Silas sweeps your '+fmt(took)+' chips of winnings off the table.':'',cut>0?'Then he counts your stack down to '+TABLINK+'. '+fmt(cut)+' more chips are gone. You are left with exactly '+fmt(toll())+'.':'',lost,'Heat drops back to 50.');
+      dlgS.push(G.night<=2?"\"You don't think we get cheaters in here all the time? I know how to spot 'em.\"":G.night<=5?"\"I'll hand it to you, stranger. You cheated your way further than most ever do. But I still caught you.\"":G.night<=7?'"You cheat beautifully. I have enjoyed watching every trick. I also caught every one."':'"YOU CHEATED WELL, LITTLE THING. IT SAW ALL OF IT."');dlg.push(took>0?'Silas sweeps your '+fmt(took)+' chips of winnings off the table.':'',cut>0?'Then he counts your stack down to '+TABLINK+'. '+fmt(cut)+' more chips are gone. You are left with exactly '+fmt(toll())+'.':'',lost,jail,'Heat drops back to 50.');
     }else if(was<75&&G.heat>=75)notes.push('Silas swaps the ball and watches your hands. Your tricks are locked until Heat drops below 75.');
     else if(was<50&&G.heat>=50)notes.push('Silas is watching you closely now.');
     G.taught=G.taught||{};
@@ -996,18 +1004,19 @@ function resolve(){
     else if(hitL)notes.push('The ball found a lucky pocket, but your Lucky Draw stake was under the first threshold.');
     else notes.push('Lucky Draw missed.');}
   G.cold=false;const curses=[];
-  if(G.night>=3)G.balls.forEach(b=>{const p=G.wheel[b.idx];if(p&&!p.void&&p.color==='green')curses.push(1);});
+  let shielded=false;if(G.night>=3)G.balls.forEach(b=>{const p=G.wheel[b.idx];if(p&&!p.void&&p.color==='green'){if(has('preacher'))shielded=true;else curses.push(1);}});
   if(G.log)G.log.spins.push({n:G.night,bets:{...G.bets},land:G.balls.map(b=>plab(G.wheel[b.idx])+(G.wheel[b.idx].gold?'g':'')),net,chips:G.chips+back,mult:Math.round(mult({gold:false})*100)/100,magnet:!!sp.magnet,balls:G.balls.length,nudged:!!sp.nudged,zeros:curses.length,heat:G.heat,eyed,lucky:prize?prize.name:undefined,caught:caught?caught.lost:undefined});
   const gross=caught?net+caught.took+caught.cut:net;
   G.spinInfo=null;
   G.chips+=back;G.bets={};
-  if(net>0){G.streak++;sfx.win();}else{G.streak=0;sfx.lose();}
+  if(net>0){G.streak++;G.lstreak=0;sfx.win();}else{G.streak=0;if(net<0)G.lstreak=(G.lstreak||0)+1;sfx.lose();}
   let where=G.balls.map(b=>pname(G.wheel[b.idx])).join(' and ');
   const landed=G.balls.length?G.balls[0].idx:-1;
   const zl=[...new Set(G.balls.map(b=>G.wheel[b.idx]).filter(p=>p&&!p.void&&p.color==='green').map(p=>lab(p.num)))].join(' and ')||'a zero';
   const cz=curses.map(()=>curse());let changed=false;
   if(cz.length){if(G.log&&G.log.spins.length)G.log.spins[G.log.spins.length-1].curses=cz.map(c=>c.id);if(cz.some(c=>c.id==='void'||c.id==='zero')){G.balls=[];G.hits=[];changed=true;}notes.push('Zero curse: '+cz.map(c=>c.text).join(' '));
     if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>.');cz.forEach(c=>dlg.push('<b class="cursel">Curse:</b> '+c.text));}
+  if(shielded){notes.push("Preacher's Coin shielded you from the zero curse.");if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>.',"Your Preacher's Coin burns hot in your pocket. The curse slides off you.");}
   moveEye(net>0&&!changed?landed:null);moveLucky();
   const head=caught?(caught.took>0?'Won '+fmt(caught.took)+', but Silas caught you. Winnings gone'+(caught.cut>0?', and '+fmt(caught.cut)+' more.':'.'):'Silas caught you.'+(caught.cut>0?' Cut down to the tab: -'+fmt(caught.cut)+'.':'')):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.';
   where=where.charAt(0).toUpperCase()+where.slice(1);
@@ -1152,6 +1161,7 @@ const SHEETS={
    sec('Staying out of trouble',['Save your tricks for the spins that matter, and nail the sleight check.','Follow a trick with a clean spin or two to cool off.','Check the Spin button: it shows the Heat a spin will add before you commit.'])},
  pay:{t:'Payouts',d:'What each bet pays tonight, and your bonuses',f:()=>{const m=mult({gold:false}),num=v=>(Math.round(v*100)/100).toString(),parts=[];
    if(has('streak')){const c=cnt('streak'),st=Math.min(G.streak,5);parts.push('Hot Streak: '+G.streak+' in a row, +'+st*10*c+'%.');}
+   if(has('sore')){const c=cnt('sore'),st=Math.min(G.lstreak||0,5);parts.push('Sore Loser: '+(G.lstreak||0)+' loss'+((G.lstreak||0)===1?'':'es')+' in a row, +'+st*15*c+'%.');}
    if(G.cold)parts.push('Cold hands: your next win is halved.');
    if(has('outlaw'))parts.push("Outlaw's Bandana: "+(G.heat>=50?'Heat is '+G.heat+', so +'+25*cnt('outlaw')+'%.':'off until your Heat reaches 50.'));
    if(G.hunger>0)parts.push('The Hunger: +'+G.hunger*10+'%.');
@@ -1342,7 +1352,7 @@ function renderLower(){
     {const proj=heatOn()?Math.round(heatPlan()):0,mg=G.magnet>=0&&!locked(),cool=heatOn()&&proj===0&&!mg&&G.heat>0&&totalBets()>0;
     h+='<button class="big spinb'+(heatOn()&&G.heat+proj>=100?' danger':'')+'" data-act="spin">Spin<span class="tag">Bet '+fmt(totalBets())+'</span>'+(proj>0?'<span class="tag up">Heat +'+proj+'</span>':cool?'<span class="tag cool">Heat -'+HEAT.cool+'</span>':'')+(mg?'<span class="tag up">Magnet +'+HEAT.mag+' if it hits</span>':'')+'</button>';}
     if(G.fs){const lk=locked();h+='<button data-act="magnet" class="'+(G.magnet>=0?'on':'')+'"'+(G.charges.magnet>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.magnet>=0&&G.wheel[G.magnet]?'Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)):'Magnet ('+G.charges.magnet+')')+'</button><button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(G.charges.ball>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':''):'Extra Ball ('+G.charges.ball+')')+'</button>';}
-    if(G.chips+totalBets()>=toll())h+='<button data-act="settle" class="payok"><span>Pay '+fmt(toll())+' and leave</span> <span class="bon">(+'+fmt(Math.min(G.spins,5)*r5(toll()*0.1))+' bonus)</span></button>';
+    if(G.chips+totalBets()>=toll())h+='<button data-act="settle" class="payok"><span>Pay '+fmt(toll())+' and leave</span> <span class="bon">(+'+fmt(Math.min(G.spins,5)*r5(toll()*0.1))+' bonus'+(has('bounty')&&G.spins>0?', +'+pls(cnt('bounty'),'trick'):'')+')</span></button>';
   }else if(G.mode==='nudge'){
     h+='<span class="nudgeb">'+nudgeBtns()+'</span><span class="hint">Nudge moves a ball to a nearby pocket. The numbers on the wheel show what each pocket is worth.</span>';
   }else if(G.mode==='closing'){
