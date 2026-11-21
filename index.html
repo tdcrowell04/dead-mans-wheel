@@ -400,7 +400,7 @@ const LINES=[
  "Back again. The wheel likes you. It don't like many.",
  "Funny. I don't recall this saloon havin' a cellar. You hear that hummin' too?",
  "Don't mind the dark pocket. It was always there! It was always there.",
- "The piano's been playin' since before the town was built. Nobody sits at it.",
+ "The piano's been playin' since before the town was built. Strangest part is that nobody's ever sat at it.",
  "You keep callin' me Silas. Silas was the first tab I ever collected.",
  "THE WHEEL IS A MOUTH AND THE NUMBERS ARE TEETH. Place your bets.",
  "No more saloon. No more desert. Only the House, and what you owe It."
@@ -545,7 +545,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v62',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v63',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1152,7 +1152,7 @@ function gameOver(won){
   const o=$('overlay');o.className='show';
   o.innerHTML='<div class="modal"><div class="portrait">'+dealerSVG(G.night)+'</div><h1>'+(won?'The Tab Is Paid':'The House Collects')+'</h1><p>'+
    (won?'You set the last chip down and the wheel stops breathing. When you step outside there is only desert, a hitching post, and a sunrise that looks almost right. You walked out with <b>'+fmt(G.chips)+'</b> chips.'
-       :'You came up short on night '+G.night+'. Silas smiles with too many teeth and writes your name in the ledger, right under his own.')+
+       :'You came up short on night '+G.night+'. Silas smiles with too many teeth and writes '+(playerName()&&playerName()!=='Stranger'?'<b>'+playerName()+'</b>':'your name')+' in the ledger, right under his own.</p><p class="speech">"We\'ve been short a pianist for a long while now. Don\'t worry. You\'ll have all the time in the world to learn."')+
    '</p><p class="hint">Relics held: '+(G.relics.map(id=>RELICS.find(r=>r.id===id).name).join(', ')||'none')+'. Wheel size: '+G.wheel.length+' pockets.</p><p class="hint" id="saveNote">'+(DB?'This run was saved so Claude can review it with you.':SHEET_URL?'Playtest build: this run was sent to the developer. Thank you for playing.':'This run was not sent anywhere. Use Copy run summary to share it.')+'</p>'+(SHEET_URL?'<div class="fb"><p class="hint" style="margin:4px 0 6px">Optional: help the developer. What did you enjoy most and least this run?</p><textarea id="fbMost" maxlength="500" placeholder="Enjoyed most..."></textarea><textarea id="fbLeast" maxlength="500" placeholder="Enjoyed least..."></textarea><button data-act="sendFb" id="fbBtn">Send</button></div>':'')+'<button class="big" data-act="restart">Play again</button>'+(SHEET_URL?'':' <button data-act="copyRun">Copy run summary</button>')+'<textarea id="runBox" style="display:none;width:100%;height:90px;margin-top:10px" readonly></textarea></div>';
   won?sfx.win():sfx.lose();
 }
