@@ -80,6 +80,7 @@ h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:v
 .betbar button{flex:1 1 0;min-width:0;padding:7px 3px;white-space:nowrap}
 .tools .ti{display:none}
 .betbar .qbtn{flex:0 0 auto;padding-left:12px;padding-right:12px}
+.tipline{font-size:13px;background:rgba(0,0,0,.28);border-left:3px solid var(--accent);border-radius:6px;padding:5px 9px;margin-bottom:8px}
 .coach{font-size:13px;background:rgba(0,0,0,.3);border:1px dashed var(--accent);border-radius:8px;padding:6px 10px;margin-bottom:8px}
 .felt>.act .spinb{flex:1 1 auto;padding:10px 12px}
 .payok{line-height:1.15;flex:0 1 auto;font-size:13px}
@@ -265,6 +266,7 @@ button.qm{font-size:10px;padding:0 6px}
 .betbar button{flex:0 0 auto;padding:3px 7px}
 .tools .tl{display:none}.tools .ti{display:inline}
 .coach,#lower .nudgeb,#eyeLine .luckline,.qi{display:none}
+.tipline{font-size:11px;padding:2px 7px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .payok{font-size:12px}.payok .bon{display:inline;font-size:12px}
 body:not(.fs) .outs .lw,.outs .pw{display:none}
 .felt>.act .spinb{flex:0 0 auto;padding:6px 12px}
@@ -450,11 +452,11 @@ function resumeGame(){
   if(G.mode==='spinning'||G.mode==='nudge'){
     // the ball already landed while you were away: no do-overs
     const n=G.wheel.length;G.balls.forEach(b=>{b.r=132;b.ang=G.wAngle+(b.idx+0.5)*360/n;});G.armed=null;applyDread();
-    if(G.charges.nudge>0&&!locked()){G.mode='nudge';say('You sit back down. The ball is waiting on '+pname(G.wheel[G.balls[0].idx])+'. Nudge it, or leave it?');render();}
+    if(G.charges.nudge>0&&!locked()){G.mode='nudge';tip('You sit back down. The ball is waiting on '+pname(G.wheel[G.balls[0].idx])+'. Nudge it, or leave it.');render();}
     else resolve();
     return;
   }
-  say('You sit back down. Night '+G.night+', '+fmt(G.chips)+' chips.');applyDread();render();
+  tip('You sit back down. Night '+G.night+', '+fmt(G.chips)+' chips.');applyDread();render();
 }
 function askName(then){
   const o=$('overlay');o.className='show';
@@ -500,7 +502,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v37',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v38',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -585,6 +587,17 @@ const pname=p=>p.void?'the Void':(lab(p.num)+' '+p.color+(p.gold?' (gold)':''));
 
 /* ---------- flow ---------- */
 function say(t){G.msg=t;}
+function tip(t){G.tip=t;}
+const QUIPS={
+  low:['"Hmm..."','"Huh."','"Interesting."','"Lucky hands tonight."','Silas makes a small mark in his ledger.',"Silas's eyes drift to your sleeve.",'"Well now."','Silas wipes the same glass twice.'],
+  mid:['"I\'m watching you, stranger."','"Funny how that ball listens to you."','"Careful now."','Silas stops polishing the glass.','"Do that again. I dare you."','"You and that ball sure are friendly."'],
+  high:['"One more trick, and you\'re mine."','"I see your hands."','Silas leans over the table and smiles.','"Go on. Try it."','"Closer and closer..."'],
+  deep:['"WE SAW THAT."','Every eye on his hat turns toward you.','Something under the table counts your fingers.','"Mmmmm..."']};
+let lastQuip='';
+function heatQuip(){
+  const pool=(G.heat>=75?QUIPS.high:G.heat>=50?QUIPS.mid:QUIPS.low).concat(G.night>=6?QUIPS.deep:[]);
+  let q=pool[Math.floor(Math.random()*pool.length)];if(q===lastQuip)q=pool[(pool.indexOf(q)+1)%pool.length];lastQuip=q;return q;
+}
 // Honest play never raises Heat: bet size and win streaks add nothing. Only tricks and rigged pockets do.
 const HEAT={early:2,free:1,bet:0,win:5,winEarly:10,winFree:2,cool:10,lose:5,mag:12,nudge:8,ball:8,tamper:8,streak:0};
 const heatOn=()=>true;
@@ -726,7 +739,7 @@ function startNight(){
   for(let h=0;h<cnt('hunger');h++){const c=G.wheel.map((p,i)=>p.void?-1:i).filter(i=>i>=0);if(c.length>1&&G.wheel.length>3){const i=c[Math.floor(Math.random()*c.length)];const gone=G.wheel.splice(i,1)[0];G.hunger++;extra+=' The Hunger ate '+pname(gone)+'.';}}
   if(G.last){for(const k in G.last)if(deadBet(k))delete G.last[k];}
   G.heat=Math.floor((G.heat||0)/2);moveEye(null);moveLucky();
-  G.mode='bet';G.res='';say(LINES[G.night-1]+extra);applyDread();render();
+  G.mode='bet';G.res='';G.tip='';say(LINES[G.night-1]+extra);applyDread();render();
   dealerSay([LINES[G.night-1],extra.trim(),G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':'',G.night===4?'The Eye has opened. Before every spin it watches a few pockets, marked in violet on the wheel and on the table. A ball that lands on a watched pocket pays nothing.':'','Tonight: '+fmt(toll())+' chips due, '+G.spins+' spins.'],'Place your bets');
   G.nightStart=G.chips;logRun(null,true);
 }
@@ -744,8 +757,8 @@ function placeBet(k){
   let amt=G.chip==='half'?Math.floor(G.chips/2):G.chip==='all'?G.chips:G.chip;
   amt=Math.min(amt,G.chips);if(amt<=0){sfx.bad();return;}
   G.chips-=amt;G.bets[k]=(G.bets[k]||0)+amt;sfx.chip();
-  if(k==='luck'){const t=luckTier(G.bets.luck);say(t?'Lucky Draw: a star wins '+TIERN[t]+'.':'Lucky Draw: not enough for a prize yet. Tap again to add more.');}
-  if(numsOf(k))say((k[0]==='s'?'Split on ':k[0]==='c'?'Corner on ':'Straight on ')+numsOf(k).map(lab).join(', ')+'. Pays '+baseOdds(k)+' to 1 with a '+pct(chance(k))+' chance on this wheel.');
+  if(k==='luck'){const t=luckTier(G.bets.luck);tip(t?'Lucky Draw: a star wins '+TIERN[t]+'.':'Lucky Draw: not enough for a prize yet. Tap again to add more.');}
+  if(numsOf(k))tip((k[0]==='s'?'Split on ':k[0]==='c'?'Corner on ':'Straight on ')+numsOf(k).map(lab).join(', ')+'. Pays '+baseOdds(k)+' to 1 with a '+pct(chance(k))+' chance on this wheel.');
   render();
 }
 function clearBets(){if(G.mode!=='bet')return;G.chips+=totalBets();G.bets={};G.remove=false;render();}
@@ -791,14 +804,14 @@ function skFinish(timeout){
 }
 function spin(){
   if(G.mode!=='bet')return;
-  if(totalBets()<=0){say('Silas taps the felt. "Chips on the table first."');sfx.bad();render();return;}
+  if(totalBets()<=0){say('Silas taps the felt. "Chips on the table first, stranger."');sfx.bad();render();return;}
   const bl=G.useBall>0&&G.charges.ball>0&&!locked();
   if(bl){sleight('ball',q=>doSpin(q));return;}
   doSpin(null);
 }
 function doSpin(skq){
   if(G.mode!=='bet')return;
-  store.set('dmw_coach','1');
+  store.set('dmw_coach','1');G.tip='';
   G.mode='spinning';G.remove=false;G.fsHold=true;G.spins--;G.last={...G.bets};G.hits=[];G.res='';
   if(locked()){G.magnet=-1;G.useBall=0;}
   const nb=1+Math.min(G.useBall,G.charges.ball,3);G.charges.ball-=nb-1;
@@ -809,7 +822,7 @@ function doSpin(skq){
   render();showWheel();
   animate(res,()=>{
     G.magnet=-1;G.useBall=0;
-    const after=()=>{if(G.charges.nudge>0&&!locked()){G.mode='nudge';say(pname(G.wheel[G.balls[0].idx])+'. Nudge it, or leave it?');render();}else resolve();};
+    const after=()=>{if(G.charges.nudge>0&&!locked()){G.mode='nudge';tip('Landed on '+pname(G.wheel[G.balls[0].idx])+'. Nudge the ball, or leave it.');render();}else resolve();};
     const sp=G.spinInfo;
     if(sp&&sp.magnet&&G.balls.some(b=>b.idx===sp.magIdx)){sp.magHit=true;sleight('magnet',q=>{sp.skM=q;after();});}
     else after();
@@ -884,6 +897,7 @@ function resolve(){
     {const pf=(sp.skS==='perfect'?1:0)+(sp.magHit&&sp.skM==='perfect'?1:0)+(sp.nudged&&sp.skN==='perfect'?1:0);if(pf&&has('tongue')){down+=5*cnt('tongue')*pf;add('Silver Tongue',-5*cnt('tongue')*pf);}}if(net<0){down+=HEAT.lose;add('lost spin',-HEAT.lose);}
     G.heat=heatNext(up,stk,down);
     if(held)notes.push('He does not like your streak, but with no trick to pin on you the Heat stops at '+heatLine()+'.');
+    {const dh0=Math.min(G.heat,100)-was;if(dh0>0&&G.heat<100)say(heatQuip());else say('');}
     {const dh=Math.min(G.heat,100)-was;if(dh)notes.push('Heat '+(dh>0?'+':'')+dh+(hp.length?' ('+hp.join(', ')+')':'')+'.');}
     if(G.heat>=100){
       G.taught=G.taught||{};G.taught.heat=true;
@@ -924,7 +938,7 @@ function resolve(){
   const head=caught?(caught.took>0?'Won '+fmt(caught.took)+', but he caught you. Winnings gone'+(caught.cut>0?', and '+fmt(caught.cut)+' more.':'.'):'He caught you.'+(caught.cut>0?' Cut down to the tab: -'+fmt(caught.cut)+'.':'')):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.';
   where=where.charAt(0).toUpperCase()+where.slice(1);
   G.res=where+'. '+head+(notes.length?' '+[...new Set(notes)].join(' '):'');
-  say('');
+  G.tip='';
   if(G.spins<=0||G.chips<=0){G.mode='closing';say(G.chips>=toll()?'"Closing time. Settle up, stranger."':'"Closing time. And you are short."');}
   else G.mode='bet';
   render();logRun();try{popResult(net,!!caught,prize);const cb=document.querySelector('#stats b');if(cb){cb.classList.remove('bump');void cb.offsetWidth;cb.classList.add('bump');}}catch(e){}
@@ -941,7 +955,7 @@ function endNight(){
     for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)];G.charges[k]++;notes+=' Bounty Poster: +1 '+(k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge')+'.';}}
   if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';}
   if(G.night>=8){gameOver(true);return;}
-  G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.res=notes;rollShop();
+  G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.res=notes;G.tip='';rollShop();
   say(dread()<0.4?'"Have a look at the back room before you go. Cash only."':'The back room is larger than the building. The shelves go down.');
   render();
 }
@@ -959,7 +973,7 @@ function buyRelic(i){const it=G.shop.relics[i];if(it.sold||G.chips<it.price||!ca
 function buyTool(i){
   const it=G.shop.tools[i];if(it.sold||(!(it.left>0)&&G.chips<it.price)){sfx.bad();return;}
   const T=TOOLS[it.type];if(!(it.left>0)&&!canBuy(T.target?'t':'s')){sfx.bad();return;}
-  if(T.target){G.armed=G.armed===i?null:i;if(G.armed!==null){say(T.name+': tap a pocket on the wheel.');}render();if(G.armed!==null)showWheel();return;}
+  if(T.target){G.armed=G.armed===i?null:i;if(G.armed!==null){tip(T.name+': tap a pocket on the wheel.');}render();if(G.armed!==null)showWheel();return;}
   G.chips-=it.price;it.sold=true;G.bought.s++;G.charges[it.type==='sball'?'ball':it.type==='smag'?'magnet':'nudge']++;G.log.buys.push({n:G.night,supply:it.type,price:it.price});sfx.buy();render();
 }
 const canBuy=k=>(G.bought[k]||0)<2;
@@ -972,9 +986,9 @@ function pocketClick(i){
     const n=G.wheel.length,R=reach();let best=null;
     G.balls.forEach((b,j)=>{let d=((i-b.idx)%n+n)%n;if(d>n/2)d-=n;if(d!==0&&Math.abs(d)<=R&&(!best||Math.abs(d)<Math.abs(best.d)))best={d,j};});
     if(best){nudge(best.d,best.j);return;}
-    say('Pick one of the glowing pockets near the ball.');sfx.bad();render();return;
+    tip('Pick one of the glowing pockets near the ball.');sfx.bad();render();return;
   }
-  if(G.mode==='bet'&&G.armed==='magnet'){G.magnet=i;G.armed=null;{const n=G.wheel.length,M=magStr();say('Magnet set on '+pname(G.wheel[i])+'. The ball has a '+pct(M/(n+M-1))+' chance to land there this spin, up from '+pct(1/n)+'.');}sfx.buy();render();return;}
+  if(G.mode==='bet'&&G.armed==='magnet'){G.magnet=i;G.armed=null;{const n=G.wheel.length,M=magStr();tip('Magnet set on '+pname(G.wheel[i])+'. The ball has a '+pct(M/(n+M-1))+' chance to land there this spin, up from '+pct(1/n)+'.');}sfx.buy();render();return;}
   if(G.mode==='shop'&&G.armed!==null){
     const it=G.shop.tools[G.armed];if(!it||it.sold)return;
     const first=!(it.left>0);if(first&&(G.chips<it.price||!canBuy('t')))return;
@@ -986,14 +1000,14 @@ function pocketClick(i){
       case'gild':if(p.gold&&!(p.goldHits>0))ok=false;else{p.gold=true;p.goldHits=0;}break;
       case'door':if(p.void)ok=false;else{p.void=true;p.color='void';p.num=-1;}break;
     }
-    if(!ok){say('That will not work on this pocket.');sfx.bad();render();return;}
+    if(!ok){tip('That will not work on this pocket.');sfx.bad();render();return;}
     if(first){G.chips-=it.price;G.bought.t++;it.left=multi?span():1;}
     it.left--;G.balls=[];G.hits=[];G.log.buys.push({n:G.night,tool:it.type,on:was,price:first?it.price:0});
-    if(it.left<=0){it.sold=true;G.armed=null;say('Done. The wheel remembers.');if(window.innerHeight>window.innerWidth)setTimeout(()=>{try{$('lower').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}},500);}
-    else say(T.name+': done. Heavy Hands lets you use it on '+it.left+' more pocket'+(it.left===1?'':'s')+'. Tap the next one.');
+    if(it.left<=0){it.sold=true;G.armed=null;tip('Done. The wheel remembers.');if(window.innerHeight>window.innerWidth)setTimeout(()=>{try{$('lower').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}},500);}
+    else tip(T.name+': done. Heavy Hands lets you use it on '+it.left+' more pocket'+(it.left===1?'':'s')+'. Tap the next one.');
     G.shop.tools.forEach(t=>{if(t.type==='brand'&&!t.sold&&!(t.left>0))t.price=toolPrice('brand');});sfx.buy();render();return;
   }
-  if((G.mode==='bet'||G.mode==='shop')&&G.armed===null&&G.wheel[i]){say(pinfo(G.wheel[i],i));render();}
+  if((G.mode==='bet'||G.mode==='shop')&&G.armed===null&&G.wheel[i]){tip(pinfo(G.wheel[i],i));render();}
 }
 function sendFeedback(auto){
   const a=$('fbMost'),b=$('fbLeast');if(!a||!b||!G||!G.log)return;
@@ -1230,7 +1244,7 @@ function renderLower(){
   if(G.mode==='shop'){
     const rc=restockCost();
     const nx=tabFor(G.night+1),short=nx-G.chips;
-    L.innerHTML='<div class="felt"><div class="nexttab'+(short>0?' bad':'')+'">Next tab: <b>'+fmt(nx)+'</b> chips. You have <b>'+fmt(G.chips)+'</b>.'+(short>0?' You are '+fmt(short)+' short, so you will have to win it at the table.':' You are covered by '+fmt(-short)+'.')+'</div><h3>Relics <span class="cap">'+capTxt(G.bought.r)+'</span></h3><div class="shop">'+
+    L.innerHTML='<div class="felt"><div class="nexttab'+(short>0?' bad':'')+'">Next tab: <b>'+fmt(nx)+'</b> chips. You have <b>'+fmt(G.chips)+'</b>.'+(short>0?' You are '+fmt(short)+' short, so you will have to win it at the table.':' You are covered by '+fmt(-short)+'.')+'</div>'+(G.tip?'<div class="tipline">'+G.tip+'</div>':'')+'<h3>Relics <span class="cap">'+capTxt(G.bought.r)+'</span></h3><div class="shop">'+
       G.shop.relics.map((it,i)=>{const r=RELICS.find(x=>x.id===it.id),cap=!it.sold&&!canBuy('r');return '<button class="card'+(r.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+'" data-act="relic" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+r.name+'</b>'+rdesc(r)+(cnt(r.id)?' <i class="hint">You have '+cnt(r.id)+'. With this one: '+rtext(r,cnt(r.id)+1)+'</i>':'')+'<span class="p">'+(it.sold?'Sold':cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
       '</div><h3>Wheel Tools <span class="cap">'+capTxt(G.bought.t)+'</span></h3><div class="shop">'+
       G.shop.tools.map((it,i)=>{const T=TOOLS[it.type];if(!T.target)return '';const cap=!it.sold&&!(it.left>0)&&!canBuy('t');return '<button class="card'+(T.cosmic?' cosmic':'')+(it.sold||cap?' sold':'')+(G.armed===i?' on':'')+'" data-act="tool" data-i="'+i+'"'+(it.sold||cap?' disabled':'')+'><b>'+T.name+'</b>'+T.desc+'<span class="p">'+(it.sold?'Sold':it.left>0?'Paid. '+it.left+' more use'+(it.left===1?'':'s'):cap?'Limit reached':fmt(it.price)+' chips')+'</span></button>';}).join('')+
@@ -1243,7 +1257,7 @@ function renderLower(){
   if(G.mode==='intro'||G.mode==='over'){L.innerHTML='';return;}
   const chips=[5,25,100,500,'half','all'];
   const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);
-  let h='<div class="felt'+(G.remove?' removing':'')+'"><div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div><div class="betbar"><div class="chips">'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c)+'</button>').join('')+
+  let h='<div class="felt'+(G.remove?' removing':'')+'"><div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div>'+(G.tip&&G.mode!=='shop'?'<div class="tipline">'+G.tip+'</div>':'')+'<div class="betbar"><div class="chips">'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c)+'</button>').join('')+
     '</div><div class="tools"><button data-act="fs" class="'+(inFs?'on':'')+'" title="Full screen table"><span class="tl">'+(inFs?'Normal view':'Full screen')+'</span><span class="ti">'+(inFs?'\u2715':'\u26F6')+'</span></button><button data-act="remove" class="'+(G.remove?'rm':'')+'"'+(G.mode==='bet'&&totalBets()>0?'':' disabled')+'>'+(G.remove?'Removing':'Remove')+'</button><button data-act="rebet"'+(G.last&&G.mode==='bet'?'':' disabled')+'>Rebet</button><button data-act="clear"'+(G.mode==='bet'?'':' disabled')+'>Clear</button><button data-act="help" title="How to bet" class="qbtn">?</button></div></div>';
   {const N=G.N,hf=N/2,t=N/3;
   if(G.mode==='bet'&&G.night===1&&!store.get('dmw_coach'))h+='<div class="coach">Tap a number or color to bet the selected chip. The dots between numbers bet on 2 or 4 at once. Tap the wheel to see what a pocket does.</div>';
@@ -1303,13 +1317,13 @@ document.addEventListener('click',e=>{
     case'fs':{const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);if(inFs)G.fs=false;else{G.fs=true;G.fsHold=false;}render();}break;
     case'help':showHelp();break;
     case'sheet':showSheet(b.dataset.t,!!b.dataset.back);break;
-    case'remove':G.remove=!G.remove;say(G.remove?'Removing: tap a bet to pull chips off it. Each tap takes back the selected chip amount.':'Back to placing bets.');render();break;
+    case'remove':G.remove=!G.remove;tip(G.remove?'Removing: tap a bet to pull chips off it. Each tap takes back the selected chip amount.':'Back to placing bets.');render();break;
     case'rebet':rebet();break;
     case'settle':endNight();break;
-    case'nudgeArm':if(G.mode==='nudge'){G.armed=G.armed==='nudge'?null:'nudge';say(G.armed?'Tap one of the glowing pockets near the ball.':'Nudge it, or leave it?');render();if(G.armed)showWheel();}break;
+    case'nudgeArm':if(G.mode==='nudge'){G.armed=G.armed==='nudge'?null:'nudge';tip(G.armed?'Tap one of the glowing pockets near the ball.':'Nudge the ball, or leave it.');render();if(G.armed)showWheel();}break;
     case'n0':nudge(0);break;
     case'skTap':skFinish(false);break;
-    case'magnet':if(G.magnet>=0){G.magnet=-1;G.armed=null;}else G.armed=G.armed==='magnet'?null:'magnet';if(G.armed)say('Magnet: tap a pocket on the wheel.');render();break;
+    case'magnet':if(G.magnet>=0){G.magnet=-1;G.armed=null;}else G.armed=G.armed==='magnet'?null:'magnet';if(G.armed)tip('Magnet: tap a pocket on the wheel.');render();break;
     case'ball':G.useBall=(G.useBall+1)%(Math.min(G.charges.ball,3)+1);render();break;
     case'relic':buyRelic(+b.dataset.i);break;
     case'tool':buyTool(+b.dataset.i);break;
