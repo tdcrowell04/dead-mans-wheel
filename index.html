@@ -40,6 +40,7 @@ body.shake #app{animation:shk .5s}
 .pk.void{fill:#000;stroke:#7b5cff}
 .pk.gold{stroke:#ffd84a;stroke-width:3;fill-opacity:.9}
 .pk.mag{stroke:#fff;stroke-width:3}
+.bonl{display:block;font-size:1.05em}.bonl b{color:#8dff9a;font-size:1.25em}
 .brandm{fill:#ff8a2a;stroke:#2a1205;stroke-width:1;pointer-events:none}
 .brandm2{fill:none;stroke:#ff8a2a;stroke-width:1.6;pointer-events:none}
 .magov{fill:#fff;pointer-events:none;animation:magp 1s ease-in-out infinite}
@@ -534,7 +535,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v50',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v51',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -786,7 +787,7 @@ function peek(target){
   clearTimeout(peek.t);peek.t=setTimeout(()=>{o.classList.remove('peek');el.classList.remove('peekhl');},2300);
 }
 const CURSE_LIST=['Lose 10% of your chips','A dark pocket opens in the wheel','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'];
-const ICONS={'Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
+const ICONS={'Left early':'\u{1F4B0}','Tab paid':'\u{1F4B0}','Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
 function dealerSay(lines,btn,title,info){
   const o=$('overlay'),sp=(lines||[]).filter(Boolean).map(callYou),inf=(info||[]).filter(Boolean);
   o.innerHTML='<div class="modal dlg">'+(sp.length?'<div class="portrait">'+dealerSVG(G.night)+'</div>':'<div class="nicon">'+(ICONS[title]||'\u2726')+'</div>')+'<h3>'+(title||dealerName())+'</h3>'+
@@ -1038,14 +1039,16 @@ function endNight(){
   if(G.log)G.log.nights.push({n:G.night,tab:toll(),chipsStart:G.nightStart,chipsBeforeTab:G.chips,spinsLeft:G.spins,paid:G.chips>=toll(),wheel:G.wheel.length,house:G.house,relics:G.relics.slice()});
   if(G.chips<toll()){gameOver(false);return;}
   const t=toll();G.chips-=t;
-  let notes='Tab paid: '+fmt(t)+'.';
-  if(G.spins>0){const b=Math.min(G.spins,5)*r5(t*0.1);G.chips+=b;notes+=' Left early with '+G.spins+' spin'+(G.spins>1?'s':'')+' unused: +'+fmt(b)+'.';
-    for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)];G.charges[k]++;notes+=' Bounty Poster: +1 '+(k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge')+'.';}}
-  if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';}
+  let notes='Tab paid: '+fmt(t)+'.';const bon=[],early=G.spins>0;
+  if(early){const b=Math.min(G.spins,5)*r5(t*0.1);G.chips+=b;notes+=' Left early with '+G.spins+' spin'+(G.spins>1?'s':'')+' unused: +'+fmt(b)+'.';
+    bon.push('<span class="bonl"><b>+'+fmt(b)+' chips</b> for '+pls(G.spins,'spin')+' left unused</span>');
+    for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)],kn=k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';G.charges[k]++;notes+=' Bounty Poster: +1 '+kn+'.';bon.push('<span class="bonl"><b>+1 '+kn+'</b> from your Bounty Poster</span>');}}
+  if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';bon.push('<span class="bonl"><b>+'+fmt(i)+' chips</b> of Claim Deed interest</span>');}
   if(G.night>=8){gameOver(true);return;}
   G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.res=notes;G.tip='';rollShop();
   say(dread()<0.4?'"Have a look at the back room before you go. Cash only."':'The back room is larger than the building. The shelves go down.');
   render();
+  if(bon.length){dealerSay([],'To the back room',early?'Left early':'Tab paid',['Tab paid: '+fmt(t)+'.'].concat(bon));try{const cb=document.querySelector('#stats b');if(cb){cb.classList.remove('bump');void cb.offsetWidth;cb.classList.add('bump');}}catch(e){}}
 }
 function rollShop(){
   const next=G.night+1,cos=next>=5;
