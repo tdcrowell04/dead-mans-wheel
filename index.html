@@ -553,7 +553,7 @@ const bossRule=r=>!!(G.night===8&&G.boss&&G.boss.rules.includes(r));
 function bossRules(){const B=G.boss;if(!B)return;const pool=Object.keys(BRULES).filter(r=>(r!=='dark'||G.wheel.some(p=>p.void))&&(r!=='stars'||G.lucky.length)),want=B.phase>=3?2:1;
   let opts=pool.filter(r=>!(want===1&&B.rules.length===1&&B.rules[0]===r));if(opts.length<want)opts=pool;
   B.rules=opts.map(r=>[Math.random(),r]).sort((a,b)=>a[0]-b[0]).slice(0,want).map(x=>x[1]);}
-function bossCheck(net){const B=G.boss;if(!B)return null;let dn=bossRule('double')?net*2:net;if(dn>0){B.armored=dn>B.max*0.35;dn=Math.min(dn,r5(B.max*0.35));}else B.armored=false;B.hp=Math.min(B.max,Math.max(0,B.hp-dn));
+function bossCheck(net){const B=G.boss;if(!B)return null;let dn=bossRule('double')?net*2:net;if(dn>0){B.armored=dn>B.max*0.4;dn=Math.min(dn,r5(B.max*0.4));}else B.armored=false;B.hp=Math.min(B.max,Math.max(0,B.hp-dn));
   if(B.hp<=0)return 'dead';let up=null;
   if(B.phase===1&&B.hp<=B.max*2/3){B.phase=2;G.spins+=2;up=2;}
   if(B.phase===2&&B.hp<=B.max/3){B.phase=3;G.spins+=2;up=3;}
@@ -568,7 +568,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v71',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v72',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -882,7 +882,7 @@ function startNight(){
   G.minBet=G.night>=6?r5((G.night===8?G.boss.max:toll())*(G.night===8?0.05:0.1)):0;
   moveEye(null);moveLucky();
   G.mode='bet';G.res='';G.tip='';say(LINES[G.night-1]+extra);applyDread();render();
-  dealerSay([LINES[G.night-1],G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays nothing.':'',G.night===8?'<b>No tab tonight.</b> The House sits down across from you with <b>'+fmt(G.boss.max)+'</b> health. Every chip you win hurts it. Every chip you lose feeds it.':'<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins.'+(G.night>=7?' No leaving early.':''),G.night===8?'Break it before your '+G.spins+' spins run out. Its hide is thick: it can lose at most '+fmt(r5(G.boss.max*0.35))+' in one spin. When it falls to two thirds and to one third, it changes, and you get 2 more spins each time. Before every spin it plays a rule: check the top of the table.':'',G.minBet?'<b>Table minimum:</b> '+fmt(G.minBet)+' a spin.':'']);
+  dealerSay([LINES[G.night-1],G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays nothing.':'',G.night===8?'<b>No tab tonight.</b> The House sits down across from you with <b>'+fmt(G.boss.max)+'</b> health. Every chip you win hurts it. Every chip you lose feeds it.':'<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins.'+(G.night>=7?' No leaving early.':''),G.night===8?'Break it before your '+G.spins+' spins run out. Its hide is thick: it can lose at most '+fmt(r5(G.boss.max*0.4))+' in one spin. When it falls to two thirds and to one third, it changes, and you get 2 more spins each time. Before every spin it plays a rule: check the top of the table.':'',G.minBet?'<b>Table minimum:</b> '+fmt(G.minBet)+' a spin.':'']);
   if(G.night===3)NEXT_DLG=()=>dealerSay([],'Understood','Zero curse',['From tonight, the zeros bite.','Land on a zero and the House lays a curse on you. It will be one of these:','<ul class="clist">'+CURSE_LIST.map(c=>'<li>'+c+'</li>').join('')+'</ul>','Tap a zero on the wheel any time to see this again.',has('preacher')?"<b>Your Preacher's Coin grows warm.</b> It shields you from every zero curse.":'']);
   if(G.night===7&&(G.reck||G.tabFloor>tabFor(7)))NEXT_DLG=()=>dealerSay(['"Let\'s see what you\'ve been up to."'],'Understood','The Reckoning',['Silas opens his ledger and reads your whole run back to you.',G.reck?'You have put the most chips on <b>'+betName(G.reck)+'</b>. Tonight that bet is closed: it pays nothing.':'',G.tabFloor>tabFor(7)?'Tonight\'s tab is 40% of your chips: <b>'+fmt(toll())+'</b>.':'']);
   G.nightStart=G.chips;logRun(null,true);
@@ -1103,8 +1103,8 @@ function resolve(){
     if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>.');cz.forEach(c=>dlg.push('<b class="cursel">Curse:</b> '+c.text));}
   if(shielded){notes.push("Preacher's Coin shielded you from the zero curse.");if(!title)title='Zero curse';dlg.push('The ball landed on <b>'+zl+'</b>.',"Your Preacher's Coin burns hot in your pocket. The curse slides off you.");}
   if(has('hunger')&&G.spins>0&&G.chips>0){const ht=hungerEat();if(ht){notes.push(ht.trim());G.balls=[];G.hits=[];changed=true;if(G.magnet>=G.wheel.length)G.magnet=-1;}}
-  let bst=null;if(G.boss){bst=bossCheck(net);if(bst!=='dead'){if(G.boss.armored)notes.push('The House\'s hide held: it can only lose '+fmt(r5(G.boss.max*0.35))+' in one spin.');if(G.boss.phase===3&&bst!==3&&G.spins>0){const g=Math.min(G.boss.max-G.boss.hp,r5(G.boss.max*0.1));if(g>0){G.boss.hp+=g;notes.push('The House regrows '+fmt(g)+'.');}}bossRules();notes.push('The House: '+fmt(G.boss.hp)+' health left.');
-      if(bst){title=bst===2?'The House wakes':'The House is desperate';dlg.push(bst===2?'The House is down to two thirds. The walls lean in.':'The House is down to one third. It stops pretending to be a saloon.',bst===2?'From now on, Heat never cools.':'From now on it plays two rules every spin, and it regrows a tenth of its health after every spin.','You get 2 more spins.');}}}
+  let bst=null;if(G.boss){bst=bossCheck(net);if(bst!=='dead'){if(G.boss.armored)notes.push('The House\'s hide held: it can only lose '+fmt(r5(G.boss.max*0.4))+' in one spin.');if(G.boss.phase===3&&bst!==3&&G.spins>0){const g=Math.min(G.boss.max-G.boss.hp,r5(G.boss.max*0.05));if(g>0){G.boss.hp+=g;notes.push('The House regrows '+fmt(g)+'.');}}bossRules();notes.push('The House: '+fmt(G.boss.hp)+' health left.');
+      if(bst){title=bst===2?'The House wakes':'The House is desperate';dlg.push(bst===2?'The House is down to two thirds. The walls lean in.':'The House is down to one third. It stops pretending to be a saloon.',bst===2?'From now on, Heat never cools.':'From now on it plays two rules every spin, and it regrows a twentieth of its health after every spin.','You get 2 more spins.');}}}
   moveEye(net>0&&!changed?landed:null);moveLucky();
   const head=caught?(caught.took>0?'Won '+fmt(caught.took)+', but Silas caught you. Winnings gone'+(caught.cut>0?', and '+fmt(caught.cut)+' more.':'.'):'Silas caught you.'+(caught.cut>0?' Cut down to the tab: -'+fmt(caught.cut)+'.':'')):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.';
   where=where.charAt(0).toUpperCase()+where.slice(1);
