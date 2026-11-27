@@ -515,7 +515,11 @@ const SHEET_URL='https://script.google.com/macros/s/AKfycbz-00h_6vyQpgY7xTUgFRVB
 const SAVE_KEY='dmw_save',NAME_KEY='dmw_name',SAVE_V=1;
 const store={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);return true;}catch(e){return false;}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
 const HAS_LS=(()=>{try{return typeof localStorage!=='undefined'&&!!localStorage;}catch(e){return false;}})();
-const playerName=()=>store.get(NAME_KEY)||'';
+const BADN=[/n+i+g+(g|a+h?s?$|e+r+(?!i))/,/f+a+g+(s?$|g*[oi]+t)/,/k+i+k+e+s?$/,/^s+p+i+c+k?s?$/,/c+h+i+n+k/,/^g+o{2,}k+s?$/,/wetback/,/^c+o{2,}n+s?$/,/tran+(y|ie)/,/retard/,/beaner/,/^pakis?$/,/raghead|towelhead/,/^dykes?$/,/cunt(?!horpe)/,/k{3}/,/hitler/,/nazi/];
+function cleanName(n){n=(n||'').trim();if(!n)return n;
+  const t=n.toLowerCase().replace(/[@4]/g,'a').replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/0/g,'o').replace(/[5$]/g,'s').replace(/7/g,'t').replace(/[^a-z]/g,'');
+  return BADN.some(r=>r.test(t))?'Stranger':n;}
+const playerName=()=>cleanName(store.get(NAME_KEY)||'');
 let sentAt='';
 function postRun(leaving){
   if(!SHEET_URL||!G||!G.log||!G.log.startRelic)return;const L=G.log;if(sentAt===L.updated)return;
@@ -613,7 +617,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v78',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v79',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
