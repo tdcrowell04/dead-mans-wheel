@@ -49,7 +49,7 @@ main{display:grid;grid-template-columns:minmax(280px,440px) 1fr;gap:14px;align-i
 #scGlow{animation:scFlick 3.3s steps(1) infinite}
 #scPup{animation:scLook 9s ease-in-out infinite}
 #lids{animation:scBlink 5.5s steps(1) infinite;opacity:0}
-#stage.hot #gHead{animation:none;transform:translateY(10px) scale(1.04)}
+#stage.lean #gHead{animation:none;transform:translateY(10px) scale(1.04)}
 #stage.down #gBody,#stage.down #gHead,#stage.down .lamp,#stage.down #scPup,#stage.down #scGlow{animation-play-state:paused}
 @keyframes scBreathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.012)}}
 @keyframes scHead{0%,100%{transform:rotate(-1.2deg) translateY(0)}30%{transform:rotate(.9deg) translateY(-3px)}60%{transform:rotate(1.6deg) translateY(-1px)}80%{transform:rotate(-.4deg) translateY(-4px)}}
@@ -166,7 +166,7 @@ h3{font-family:'Rye',serif;font-weight:400;margin:0 0 6px;font-size:16px;color:v
 .sleight{max-width:460px}
 .skbar{position:relative;height:34px;margin:16px 0 8px;border-radius:17px;background:#1a0f08;border:2px solid var(--edge);overflow:hidden}
 .skz{position:absolute;top:0;bottom:0;background:#2f7a3f}
-.skp{position:absolute;top:0;bottom:0;left:40%;width:20%;background:var(--accent)}
+.skp{position:absolute;top:0;bottom:0;left:37.5%;width:25%;background:var(--accent)}
 .skn{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:#fff;box-shadow:0 0 8px #fff;left:0}
 .cursel{color:#ff8f7f;font-weight:400}
 .skres{min-height:22px;margin-bottom:6px}.skres .good{color:#8dff9a;font-weight:400}.skres .bad{color:#ff8f7f;font-weight:400}
@@ -618,7 +618,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v82',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v83',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -996,8 +996,8 @@ const skMult=q=>q==='miss'&&has('sleeve')?1:SKQ[q];
 let SK=null;
 function sleight(kind,done){
   if(typeof SIM_SKILL==='function'){done(SIM_SKILL());return;}
-  const zw=Math.min(0.6,Math.max(0.05,0.16-0.012*(G.night-1)-G.heat*0.0008)*(1+0.3*cnt('gloves'))),
-        speed=(1.25+0.15*G.night)*Math.max(0.4,1-0.2*cnt('hourglass')),z0=0.08+Math.random()*(0.84-zw);
+  const zw=Math.min(0.6,Math.max(0.08,0.23-0.015*(G.night-1)-G.heat*0.0008)*(1+0.3*cnt('gloves'))),
+        speed=(1.0+0.1*G.night)*Math.max(0.4,1-0.2*cnt('hourglass')),z0=0.08+Math.random()*(0.84-zw);
   const title={magnet:'Palm the magnet',ball:'Slip in the extra ball',both:'Work the table',nudge:'Bump the table'}[kind];
   const o=$('overlay');
   o.innerHTML='<div class="modal sleight"><h3>'+title+'</h3><p class="hint">Tap when the needle is in the green. Gold is perfect.</p>'+
@@ -1013,7 +1013,7 @@ function sleight(kind,done){
 function skFinish(timeout){
   if(!SK||SK.over)return;SK.over=true;cancelAnimationFrame(SK.raf);
   const p=timeout?-1:SK.pos((performance.now()-SK.t0)/1000),z0=SK.z0,zw=SK.zw,mid=z0+zw/2;
-  let q=p>=z0&&p<=z0+zw?(Math.abs(p-mid)<=zw*0.1?'perfect':'clean'):'miss';
+  let q=p>=z0&&p<=z0+zw?(Math.abs(p-mid)<=zw*0.125?'perfect':'clean'):'miss';
   const r=$('skres'),bt=$('skBtn');
   if(q==='miss'&&(G.skRetry||0)<cnt('deck')){G.skRetry=(G.skRetry||0)+1;if(r)r.innerHTML='<b class="bad">Fumbled.</b> Your Second Deck gives you another try...';sfx.bad();
     const {kind,done}=SK;setTimeout(()=>sleight(kind,done),900);return;}
@@ -1525,7 +1525,7 @@ function renderLower(){
 function leaveShort(){if(!G||G.mode!=='bet'||G.night>=7||G.spins<=0)return null;const t=toll(),after=G.chips+totalBets()-t+Math.min(G.spins,5)*r5(t*0.1),next=nextTab();return after<next?{after,next}:null;}
 const camForced=()=>G.mode==='spinning'||G.mode==='nudge'||G.mode==='shop'||G.armed!=null||Date.now()<(G.lookUntil||0);
 function renderScene(){if(typeof SIM_SKILL==='function')return;const st=$('stage');if(!st)return;const forced=camForced(),dn=forced||!!G.look;
-  st.classList.toggle('down',dn);st.classList.toggle('hot',heatOn()&&G.heat>=50);
+  st.classList.toggle('down',dn);st.classList.toggle('lean',heatOn()&&G.heat>=50);
   const lb=$('lookBtn');lb.disabled=forced;lb.textContent=dn?'\u25B2 Silas':'\u25BC Wheel';
   const n=G.night,pc=n<3?'#ffffff':n===3?'#ffb347':n<7?'#b06bff':'#5dffd0';
   $('scPup').querySelectorAll('circle').forEach(c=>c.setAttribute('fill',pc));
