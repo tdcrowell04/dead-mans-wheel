@@ -603,16 +603,19 @@ const RELICS=[
  {id:'nails',b:'wreck',name:'Coffin Nails',base:45,cosmic:true,desc:'Wins on pockets right next to a Void pocket pay 30% more.'},
  {id:'hardware',b:'wreck',name:'Hardware Tab',base:50,u:true,desc:'Wheel tools cost half, and you can buy 3 a night instead of 2.'},
  {id:'early',b:'bank',name:'Early Bird',base:35,desc:'Leaving early pays double for every spin you leave unused.'},
- {id:'purse',b:'bank',name:"Miser's Purse",base:45,desc:"A spin where you bet less than a quarter of tonight's tab pays you 8% of the tab, win or lose."},
+ {id:'purse',b:'bank',name:"Miser's Purse",base:45,desc:'The house comp for small bets pays you 8% of the tab more.'},
  {id:'standing',b:'bank',name:'Good Standing',base:50,u:true,desc:'Relics cost 15% less, and your first restock each night is free.'},
  {id:'dividend',b:'bank',name:'Dividend',base:50,desc:"At the start of each night, collect 3% of tonight's tab for every relic you carry."},
  {id:'star',b:'lucky',name:'Shooting Star',base:45,desc:'Wins on starred pockets pay 30% more, with or without a Lucky Draw bet.'},
  {id:'seventh',b:'lucky',name:'Seventh Son',base:50,u:true,desc:'Every 7th spin, your Lucky Draw bet wins wherever the ball lands. If you have no bet down, it waits for your next one.'},
  {id:'raffle',b:'lucky',name:'Raffle Roll',base:35,desc:'Every trick you win from the Lucky Draw comes with a second one.'},
  {id:'pity',b:'lucky',name:'Consolation Prize',base:30,u:true,desc:'Every 3rd Lucky Draw miss in a row wins you a trick anyway.'},
+ {id:'pin',b:'bank',name:"High Roller's Pin",base:50,cap:3,desc:'Your table limit is 50% higher.'},
+ {id:'roll',b:'streak',name:'On a Roll',base:45,desc:'Each win in a row raises your table limit by 10%, up to +50% at 5 in a row.'},
+ {id:'backroom',b:'sharp',name:'Back Room Stakes',base:45,u:true,desc:'Straight number bets count only half toward the table limit.'},
  {id:'ticket',b:'lucky',name:'Free Ticket',base:55,u:true,desc:'Your first Lucky Draw bet each night comes back to you, hit or miss.'}
 ];
-const RAR2=['blinders','brush','fullcoat','pull','notch','steady','deck','wanted','tinstar','ace','fools','dust','strike','watch','barrel','wind','felt','nails','hardware','partner','bond','purse','charm','penny','star'];
+const RAR2=['pin','roll','backroom','blinders','brush','fullcoat','pull','notch','steady','deck','wanted','tinstar','ace','fools','dust','strike','watch','barrel','wind','felt','nails','hardware','partner','bond','purse','charm','penny','star'];
 const RAR3=['eye','colorblind','hound','deadeye','pardon','devil','fever','claim','encore','lap','hunger','noneuclid','standing','dividend','seventh','ticket'];
 RELICS.forEach(x=>{x.r=RAR3.includes(x.id)?3:RAR2.includes(x.id)?2:1;});
 const RARN=['','Common','Rare','Legendary'],RARM=[0,1,1.15,1.5];
@@ -742,6 +745,17 @@ const colShare=c=>{let a=0,t=0;G.wheel.forEach(p=>{if(!p.void&&p.color!=='green'
 const lastSpin=()=>G.mode==='bet'?G.spins===1:G.spins===0;
 const nearVoid=i=>{const n=G.wheel.length;return n>2&&[(i+1)%n,(i+n-1)%n].some(j=>G.wheel[j]&&G.wheel[j].void);};
 const goldN=()=>G.wheel.filter(p=>p.gold).length;
+const limMult=()=>1+0.25*(G.limUps||0)+0.5*Math.min(3,cnt('pin'))+0.1*cnt('roll')*Math.min(G.streak||0,5);
+const limBase=()=>G.night===8&&G.boss?Math.max(TOLLS[7],G.boss.max*0.25):TOLLS[G.night-1];
+const tableLimit=()=>r5(limBase()*limMult());
+const limW=k=>k==='luck'?0:(k[0]==='n'&&has('backroom')?0.5:1);
+const limUsed=()=>Object.entries(G.bets).reduce((a,x)=>a+x[1]*limW(x[0]),0);
+const limRoom=k=>Math.max(0,Math.floor((tableLimit()-limUsed())/limW(k)/5+1e-9)*5);
+const compOn=()=>!G.boss&&limUsed()>0&&limUsed()<=tableLimit()/2;
+const compAmt=()=>Math.max(5,r5(TOLLS[G.night-1]*0.05))+(has('purse')?Math.max(5,r5(TOLLS[G.night-1]*0.08))*cnt('purse'):0);
+const nextLimBase=()=>G.night===7?Math.max(TOLLS[7],(G.bossPre||0)*0.25):TOLLS[Math.min(7,G.night)];
+const limUpPrice=()=>r5(price(30)*Math.pow(1.5,G.limUps||0));
+function buyLim(){if(G.mode!=='shop'||G.limBought||G.chips<limUpPrice()){sfx.bad();return;}const p=limUpPrice();G.chips-=p;G.limUps=(G.limUps||0)+1;G.limBought=true;G.log.buys.push({n:G.night,limit:G.limUps,price:p});tip('Table limit raised. Tomorrow you can bet up to '+fmt(r5(nextLimBase()*limMult()))+' a spin.');sfx.buy();render();}
 const earlyBonus=t=>Math.min(G.spins,5)*r5(t*0.1)*(1+cnt('early'));
 const rrMax=()=>2+(has('standing')?1:0);
 function markNum(){if(!G||!has('marked'))return null;const ok=v=>v!=null&&G.wheel.some(p=>!p.void&&p.color!=='green'&&p.num===v);if(G.markNight!==G.night||!ok(G.markNum)){const c=[...new Set(G.wheel.filter(p=>!p.void&&p.color!=='green').map(p=>p.num))];G.markNum=c.length?c[Math.floor(Math.random()*c.length)]:null;G.markNight=G.night;}return G.markNum;}
@@ -752,7 +766,7 @@ function xm(k,p,i){let m=1;
   if(has('nails')&&nearVoid(i))m*=1+0.3*cnt('nails');
   if(has('parlay')&&k!=='void'&&k!=='luck'&&!numsOf(k)&&matches(k,p)&&parN(p)>=2)m*=1+0.2*cnt('parlay');
   return m;}
-const TOT={fullcoat:c=>'While two thirds or more of your red and black pockets are one color, bets on that color pay '+20*c+'% more.',parlay:c=>'When 2 or more of your color, odd/even, half, third or column bets win on the same spin, each pays '+20*c+'% more.',wetpaint:c=>'The first time the ball lands on a pocket you painted, your color bets on it pay x'+(1+c)+'.',deadeye:c=>'When a single number is your only bet, it pays '+50*c+'% more.',marked:c=>'Straight bets on the marked number pay x'+(1+c)+'.',sawedoff:c=>'Split and corner bets pay '+30*c+'% more.',steady:c=>'Each spin in a row on the same number pays '+10*c+'% more, up to +'+50*c+'%.',lamp:c=>'Every gold pocket on your wheel makes all your wins pay '+3*c+'% more.',paydirt:c=>"When the gold flakes off a pocket, collect "+20*c+"% of tonight's tab.",lastcall:c=>'Your last spin each night pays '+50*c+'% more.',encore:c=>'The first '+c+' times each night your win streak reaches 3 or more, you get 1 more spin.',comeback:c=>'A win right after a losing spin pays '+40*c+'% more.',lap:c=>"Every winning spin also pays "+3*c+"% of tonight's tab for each win in your streak, up to 5 in a row.",scrap:c=>"Each pocket you pry out pays you "+15*c+"% of that night's tab.",nails:c=>'Wins on pockets right next to a Void pocket pay '+30*c+'% more.',early:c=>'Leaving early pays x'+(1+c)+' for every spin you leave unused.',purse:c=>"A spin where you bet less than a quarter of tonight's tab pays you "+8*c+"% of the tab.",dividend:c=>"At the start of each night, collect "+3*c+"% of tonight's tab for every relic you carry.",star:c=>'Wins on starred pockets pay '+30*c+'% more.',raffle:c=>'Every trick you win from the Lucky Draw comes with '+c+' more.',bond:c=>'Every spin, earn '+2*c+'% on the chips you keep off the table, up to a fifth of the tab.',charm:c=>'While you hold a Lucky Draw ticket, the ball is '+(1+c)+' times as likely to land on a starred pocket.',bartab:c=>'Your first '+pls(c,'drink')+' for Silas each night '+(c>1?'are':'is')+' free.',surething:c=>'Any bet that covers more than half the wheel pays '+15*c+'% more.',notch:c=>'Each straight number hit makes straight bets pay '+10*c+'% more for the rest of the run, up to 10 hits.',pan:c=>"Whenever the ball lands on a gold pocket, collect "+10*c+"% of tonight's tab, bet or no bet.",assay:c=>'Gold lasts '+2*c+' more hits before it flakes off.',partner:c=>"After every spin, win or lose, collect "+5*c+"% of tonight's tab.",wind:c=>'The first '+pls(c,'losing spin')+' each night do not break your win streak.',clover:c=>'A Lucky Draw hit also pays your Lucky Draw stake back '+3*c+' to 1.',spade:c=>'You get '+c+' more free wheel tools every night.',horseshoe:c=>'Color, odd/even and half bets pay '+25*c+'% more.',snake:c=>pls(c,'losing spin')+' each night give back half of what you lost.',tooth:c=>'Gold pockets pay x'+(2+c)+'.',
+const TOT={fullcoat:c=>'While two thirds or more of your red and black pockets are one color, bets on that color pay '+20*c+'% more.',parlay:c=>'When 2 or more of your color, odd/even, half, third or column bets win on the same spin, each pays '+20*c+'% more.',wetpaint:c=>'The first time the ball lands on a pocket you painted, your color bets on it pay x'+(1+c)+'.',deadeye:c=>'When a single number is your only bet, it pays '+50*c+'% more.',marked:c=>'Straight bets on the marked number pay x'+(1+c)+'.',sawedoff:c=>'Split and corner bets pay '+30*c+'% more.',steady:c=>'Each spin in a row on the same number pays '+10*c+'% more, up to +'+50*c+'%.',lamp:c=>'Every gold pocket on your wheel makes all your wins pay '+3*c+'% more.',paydirt:c=>"When the gold flakes off a pocket, collect "+20*c+"% of tonight's tab.",lastcall:c=>'Your last spin each night pays '+50*c+'% more.',encore:c=>'The first '+c+' times each night your win streak reaches 3 or more, you get 1 more spin.',comeback:c=>'A win right after a losing spin pays '+40*c+'% more.',lap:c=>"Every winning spin also pays "+3*c+"% of tonight's tab for each win in your streak, up to 5 in a row.",scrap:c=>"Each pocket you pry out pays you "+15*c+"% of that night's tab.",nails:c=>'Wins on pockets right next to a Void pocket pay '+30*c+'% more.',early:c=>'Leaving early pays x'+(1+c)+' for every spin you leave unused.',purse:c=>'The house comp for small bets pays you '+8*c+'% of the tab more.',pin:c=>'Your table limit is '+50*Math.min(3,c)+'% higher'+(c>3?' (only 3 count)':'')+'.',roll:c=>'Each win in a row raises your table limit by '+10*c+'%, up to 5 in a row.',dividend:c=>"At the start of each night, collect "+3*c+"% of tonight's tab for every relic you carry.",star:c=>'Wins on starred pockets pay '+30*c+'% more.',raffle:c=>'Every trick you win from the Lucky Draw comes with '+c+' more.',bond:c=>'Every spin, earn '+2*c+'% on the chips you keep off the table, up to a fifth of the tab.',charm:c=>'While you hold a Lucky Draw ticket, the ball is '+(1+c)+' times as likely to land on a starred pocket.',bartab:c=>'Your first '+pls(c,'drink')+' for Silas each night '+(c>1?'are':'is')+' free.',surething:c=>'Any bet that covers more than half the wheel pays '+15*c+'% more.',notch:c=>'Each straight number hit makes straight bets pay '+10*c+'% more for the rest of the run, up to 10 hits.',pan:c=>"Whenever the ball lands on a gold pocket, collect "+10*c+"% of tonight's tab, bet or no bet.",assay:c=>'Gold lasts '+2*c+' more hits before it flakes off.',partner:c=>"After every spin, win or lose, collect "+5*c+"% of tonight's tab.",wind:c=>'The first '+pls(c,'losing spin')+' each night do not break your win streak.',clover:c=>'A Lucky Draw hit also pays your Lucky Draw stake back '+3*c+' to 1.',spade:c=>'You get '+c+' more free wheel tools every night.',horseshoe:c=>'Color, odd/even and half bets pay '+25*c+'% more.',snake:c=>pls(c,'losing spin')+' each night give back half of what you lost.',tooth:c=>'Gold pockets pay x'+(2+c)+'.',
   outlaw:c=>'While your Heat is 50 or more, all your wins pay '+25*c+'% more.',longshot:c=>'Straight number bets pay '+20*c+'% more.',undertaker:c=>'Every change you make to the wheel makes all your wins pay '+4*c+'% more, for the rest of the run.',
   reach:c=>'Your Nudge can move the ball up to '+pls(1+c,'pocket')+'.',pull:c=>'Your Magnet lands its number about '+Math.round(100*(4+3*c)/(16+3*c))+'% of the time.',heavy:c=>'Pry Bar, Branding Iron and Paint Bucket each work on '+pls(1+c,'pocket')+'.',
   preacher:c=>'When the ball lands on a zero, every bet pays '+c+' to 1.',streak:c=>'Each win in a row adds +'+10*c+'% to payouts, up to 5 in a row.',watch:c=>'+'+pls(c,'spin')+' every night.',gloves:c=>'The green zone in a sleight check is '+30*c+'% wider.',hourglass:c=>'The needle in a sleight check moves '+Math.min(60,20*c)+'% slower.',
@@ -773,13 +787,13 @@ const toll=()=>G.night===8&&G.boss?Math.max(0,G.boss.hp):Math.max(tabFor(G.night
 const nextTab=()=>G.night+1===7?Math.max(tabFor(7),r5(G.chips*0.4)):G.night+1===8?(G.bossPre||Math.max(TOLLS[7],r5(G.chips*0.6))):tabFor(G.night+1);
 const reckOn=k=>G.night===7&&G.reck&&k===G.reck;
 const BRULES={number:{n:'Feed it a number',d:'Your biggest bet must be on a single number.'},dark:{n:'The dark opens',d:'Void pockets are 4 times as likely to be hit this spin.'},eye:{n:'Every eye open',d:'The Eye watches half the wheel this spin. Watched pockets pay half.'},
- spread:{n:'Spread thin',d:'Make at least 4 different bets (Lucky Draw does not count). No single bet can be more than a third of your total.'},allin:{n:'All or nothing',d:'Put at least half of all your chips on the table.'},inside:{n:'Inside only',d:'You can only bet on numbers and the dots between them. Colors and the other big boxes are closed.'},
+ spread:{n:'Spread thin',d:'Make at least 4 different bets (Lucky Draw does not count). No single bet can be more than a third of your total.'},allin:{n:'All or nothing',d:'Put at least half of all your chips on the table, or the full table limit if that is less.'},inside:{n:'Inside only',d:'You can only bet on numbers and the dots between them. Colors and the other big boxes are closed.'},
  handsoff:{n:'Hands off',d:'No Magnet, Nudge or Extra Ball this spin.'},double:{n:'Double or nothing',d:'Wins hurt the House twice as much. Losses heal it twice as much.'},stars:{n:'Burning stars',d:'If the ball lands on a starred pocket, every bet loses, Lucky Draw included.'}};
 function bossRuleHTML(){const B=G.boss;if(!B)return '';const e=Object.entries(G.bets).filter(x=>x[0]!=='luck'),tot=e.reduce((a,x)=>a+x[1],0),all=G.chips+totalBets();
   const st=r=>{if(G.mode!=='bet')return null;
     if(r==='number'){const sm=Math.max(0,...e.filter(x=>x[0][0]==='n').map(x=>x[1])),ot=Math.max(0,...e.filter(x=>x[0][0]!=='n').map(x=>x[1]));return !e.length?['','Tap one number and make it your biggest bet.']:sm>0&&sm>=ot?['ok','Good. Your biggest bet is on a number.']:['no','Not yet. Your biggest bet is not on a single number.'];}
     if(r==='spread'){const v=e.map(x=>x[1]),mx=Math.max(0,...v);return v.length>=4&&mx<=tot/3+0.01?['ok','Good. '+v.length+' bets, none over a third.']:['no','Not yet. '+v.length+' of 4 bets'+(v.length&&mx>tot/3+0.01?', and one bet is over a third ('+fmt(Math.floor(tot/3))+' is the most)':'')+'.'];}
-    if(r==='allin'){const need=Math.ceil(all/2);return totalBets()>=need?['ok','Good. '+fmt(totalBets())+' on the table.']:['no','Not yet. '+fmt(totalBets())+' on the table, you need '+fmt(need)+'.'];}
+    if(r==='allin'){const need=Math.min(Math.ceil(all/2),tableLimit());return totalBets()>=need?['ok','Good. '+fmt(totalBets())+' on the table.']:['no','Not yet. '+fmt(totalBets())+' on the table, you need '+fmt(need)+'.'];}
     if(r==='inside')return ['','The closed boxes are greyed out.'];
     return null;};
   return '<div class="brules"><div class="brh">The House\'s rule'+(B.rules.length>1?'s':'')+' for this spin <i>a new one every spin, no repeats until all nine have come up</i></div>'+B.rules.map(r=>{const x=st(r);return '<div class="brl"><b>'+BRULES[r].n+'</b><span>'+BRULES[r].d+'</span>'+(x?'<em class="'+x[0]+'">'+(x[0]==='ok'?'\u2713 ':x[0]==='no'?'\u2717 ':'')+x[1]+'</em>':'')+'</div>';}).join('')+'<div class="brn">'+(G.spins>1&&B.next&&B.next.length?'Next spin: <b>'+B.next.map(r=>BRULES[r].n).join('</b> and <b>')+'</b>':'This is your last spin.')+'</div></div>';}
@@ -829,7 +843,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v110',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v111',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -973,7 +987,7 @@ function activeMods(){
   if(has('lastcall')&&G.mode==='bet'&&lastSpin())a('Last Call: this spin +'+50*cnt('lastcall')+'%','good',gear,rn('lastcall'));
   if(has('comeback')&&(G.lstreak||0)>0)a('Comeback Kid: next win +'+40*cnt('comeback')+'%','good',gear,rn('comeback'));
   if(has('encore')){const l=cnt('encore')-(G.encoreUsed||0);a(l>0?'Encore ready':'Encore used tonight',l>0?'good':'dim',gear,rn('encore'));}
-  if(has('purse')&&G.mode==='bet'){const lim=TOLLS[G.night-1]*0.25,tb=totalBets();a(tb<=0?"Miser's Purse: bet under "+fmt(Math.ceil(lim)):tb<lim?"Miser's Purse: pays this spin":"Miser's Purse: bet too big",tb>0&&tb>=lim?'dim':'good',gear,rn('purse'));}
+  if(G.mode==='bet'){a('Table limit '+fmt(tableLimit()),'dim','data-act="sheet" data-t="bet"','Table limit');if(!G.boss)a(compOn()?'House comp: +'+fmt(compAmt())+' this spin':'House comp: bet '+fmt(Math.floor(tableLimit()/2/5)*5)+' or less',compOn()?'good':'dim','data-act="sheet" data-t="bet"','House comp');}
   if(has('wetpaint')){const w=G.wheel.filter(p=>p.wet&&!p.void).length;if(w)a(pls(w,'wet pocket'),'good',gear,rn('wetpaint'));}
   if(has('seventh'))a((G.sevN||0)>=6?'Seventh Son: this spin':'Seventh Son: in '+pls(6-(G.sevN||0),'spin'),(G.sevN||0)>=6?'good':'dim',gear,rn('seventh'));
   if(has('ticket'))a(G.ticketUsed?'Free Ticket used tonight':'Free Ticket ready',G.ticketUsed?'dim':'good',gear,rn('ticket'));
@@ -1210,9 +1224,10 @@ function startNight(){
   if(has('marked')){G.markNight=0;const mn=markNum();if(mn!=null)extra+=" Tonight's marked number is "+lab(mn)+'.';}
   if(has('dividend')){const g=r5(TOLLS[G.night-1]*0.03*G.relics.length)*cnt('dividend');G.chips+=g;G.earn=G.earn||{};G.earn.dividend=(G.earn.dividend||0)+g;extra+=' Dividend: +'+fmt(g)+' chips for the '+pls(G.relics.length,'relic')+' you carry.';}
   G.minBet=G.night>=6?r5((G.night===8?G.boss.max:toll())*(G.night===8?0.05:0.1)):0;
+  if(G.minBet)G.minBet=Math.min(G.minBet,Math.floor(tableLimit()/2/5)*5);
   moveEye(null);moveLucky();
   G.mode='bet';G.res='';G.tip='';say(LINES[G.night-1]+extra);applyDread();render();
-  dealerSay([LINES[G.night-1],G.night===1?'Bet as big as you like. Win honest and I don\'t care how much. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays only half.':'',G.night===8?'<b>No tab tonight.</b> The House sits down across from you with <b>'+fmt(G.boss.max)+'</b> health. Every chip you win hurts it. Every chip you lose feeds it.':'<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins.'+(G.night>=7?' No leaving early.':''),G.night===8?'Break it before your '+G.spins+' spins run out. Its hide is thick: it can lose at most '+fmt(r5(G.boss.max*0.4))+' in one spin. When it falls to two thirds and to one third, it changes, and you get 2 more spins each time. Before every spin it plays a rule: check the top of the table.':'',G.minBet?'<b>Table minimum:</b> '+fmt(G.minBet)+' a spin.':'']);
+  dealerSay([LINES[G.night-1],G.night===1?'Table limit is posted on the felt. Win honest and I don\'t care how often. Cheat, and I start watchin\'.':''],'Place your bets',null,[extra.trim(),G.night===4?'<b>The Eye has opened.</b> Before every spin it watches a few pockets, marked in violet on the wheel and the table. A ball that lands on one pays only half.':'',G.night===8?'<b>No tab tonight.</b> The House sits down across from you with <b>'+fmt(G.boss.max)+'</b> health. Every chip you win hurts it. Every chip you lose feeds it.':'<b>Tonight:</b> '+fmt(toll())+' chips due, '+G.spins+' spins. Table limit '+fmt(tableLimit())+' a spin.'+(G.night>=7?' No leaving early.':''),G.night===8?'Break it before your '+G.spins+' spins run out. Its hide is thick: it can lose at most '+fmt(r5(G.boss.max*0.4))+' in one spin. When it falls to two thirds and to one third, it changes, and you get 2 more spins each time. Before every spin it plays a rule: check the top of the table.':'',G.minBet?'<b>Table minimum:</b> '+fmt(G.minBet)+' a spin.':'']);
   if(G.night===3)NEXT_DLG=()=>dealerSay([],'Understood','Zero curse',['From tonight, the zeros bite.','Land on a zero and the House lays a curse on you. It will be one of these:','<ul class="clist">'+CURSE_LIST.map(c=>'<li>'+c+'</li>').join('')+'</ul>','This list is always in Rules, under Zeros.',has('preacher')?"<b>Your Preacher's Coin grows warm.</b> It shields you from every zero curse.":'']);
   if(G.night===7&&(G.reck||G.tabFloor>tabFor(7)))NEXT_DLG=()=>dealerSay(['"Let\'s see what you\'ve been up to."'],'Understood','The Reckoning',['Silas opens his ledger and reads your whole run back to you.',G.reck?'You have put the most chips on <b>'+betName(G.reck)+'</b>. Tonight that bet is closed: it pays nothing.':'',G.tabFloor>tabFor(7)?'Tonight\'s tab is 40% of your chips: <b>'+fmt(toll())+'</b>.':'']);
   G.nightStart=G.chips;logRun(null,true);
@@ -1250,13 +1265,16 @@ function placeBet(k,force){
   if(G.mode!=='bet')return;
   if(G.remove){takeBet(k);return;}
   if(deadBet(k)){sfx.bad();return;}
-  if(G.chip==='custom'&&force==null){askAmount('How much on '+betName(k)+'?',G.chips,v=>placeBet(k,v));return;}
+  const room=k==='luck'?1e15:limRoom(k);
+  if(room<5){sfx.bad();tip('Table limit: '+fmt(tableLimit())+' a spin. Raise it in the back room.');render();return;}
+  if(G.chip==='custom'&&force==null){askAmount('How much on '+betName(k)+'?',Math.min(G.chips,room),v=>placeBet(k,v));return;}
   let amt=force!=null?force:G.chip==='half'?Math.floor(G.chips/2):G.chip==='all'?G.chips:G.chip;
-  amt=Math.min(amt,G.chips);if(amt<=0){sfx.bad();return;}
+  amt=Math.min(amt,G.chips);const clamped=amt>room;amt=Math.min(amt,room);if(amt<=0){sfx.bad();return;}
   if(k==='luck'){const cap=luckSteps()[2]-(G.bets.luck||0);if(cap<=0){sfx.bad();tip('The Lucky Draw takes no more than the rare relic price: '+fmt(luckSteps()[2])+'.');render();return;}amt=Math.min(amt,cap);}
   G.chips-=amt;G.bets[k]=(G.bets[k]||0)+amt;sfx.chip();
   if(k==='luck'){const t=luckTier(G.bets.luck);tip(t?'Lucky Draw: a star wins '+TIERN[t]+'.':'Lucky Draw: not enough for a prize yet. Tap again to add more.');}
   if(!numsOf(k)&&k!=='luck'){const rt=Math.round(chance(k)*(baseOdds(k)*mult({gold:false})+1)*100);{const e=rt-100;tip(betName(k)+': wins '+pct(chance(k))+' of the time. '+(e>1?'The odds favor you by '+e+'%.':e<-1?'The odds favor the house by '+(-e)+'%.':'An even bet.'));}}
+  if(clamped)G.tip=(G.tip?G.tip+' ':'')+'Table limit reached: '+fmt(tableLimit())+' a spin.';
   if(numsOf(k))tip((k[0]==='s'?'Split on ':k[0]==='c'?'Corner on ':'Straight on ')+numsOf(k).map(lab).join(', ')+'. Pays '+baseOdds(k)+' to 1. Hits '+pct(chance(k))+' of the time on this wheel.');
   render();
 }
@@ -1264,7 +1282,7 @@ function clearBets(){if(G.mode!=='bet')return;G.chips+=totalBets();G.bets={};G.r
 function unbet(k){if(G.mode!=='bet'||!G.bets[k])return;G.chips+=G.bets[k];delete G.bets[k];render();}
 function rebet(){
   if(G.mode!=='bet'||!G.last)return;clearBets();
-  for(const [k,v] of Object.entries(G.last)){const a=Math.min(v,G.chips);if(a>0){G.chips-=a;G.bets[k]=a;}}
+  for(const [k,v] of Object.entries(G.last)){const a=Math.min(v,G.chips,k==='luck'?luckSteps()[2]:limRoom(k));if(a>0){G.chips-=a;G.bets[k]=a;}}
   render();
 }
 function pick(){
@@ -1309,7 +1327,7 @@ function spin(){
   if(totalBets()<=0){say('Silas taps the felt. "Chips on the table first, stranger."');sfx.bad();render();return;}
   if(G.minBet&&totalBets()<G.minBet&&G.chips>0){tip('Table minimum tonight: '+fmt(G.minBet)+' a spin. You have '+fmt(totalBets())+' down.'+(G.chips+totalBets()<G.minBet?' Put everything you have on the table.':''));sfx.bad();render();return;}
   if(bossRule('spread')){const v=Object.entries(G.bets).filter(x=>x[0]!=='luck').map(x=>x[1]),t=v.reduce((a,b)=>a+b,0);if(v.length<4||Math.max(...v)>t/3+0.01){tip('Spread thin: make at least 4 bets, none more than a third of your total ('+fmt(Math.floor(t/3))+').');sfx.bad();render();return;}}
-  if(bossRule('allin')&&totalBets()<(G.chips+totalBets())/2){tip('All or nothing: put at least '+fmt(Math.ceil((G.chips+totalBets())/2))+' on the table.');sfx.bad();render();return;}
+  if(bossRule('allin')&&totalBets()<Math.min((G.chips+totalBets())/2,tableLimit())){tip('All or nothing: put at least '+fmt(Math.min(Math.ceil((G.chips+totalBets())/2),tableLimit()))+' on the table.');sfx.bad();render();return;}
   if(bossRule('number')){const e=Object.entries(G.bets),st=Math.max(0,...e.filter(x=>x[0][0]==='n').map(x=>x[1])),ot=Math.max(0,...e.filter(x=>x[0][0]!=='n').map(x=>x[1]));if(st<=0||st<ot){tip('The House wants your biggest bet on a single number.');sfx.bad();render();return;}}
   const bl=G.useBall>0&&G.charges.ball>0&&!locked();
   if(bl){sleight('ball',q=>doSpin(q));return;}
@@ -1385,7 +1403,7 @@ function resolve(){
   if(has('notch')&&G.balls.some(b=>!G.watch.includes(b.idx)&&Object.keys(G.bets).some(k=>k[0]==='n'&&hitOdds(k,G.wheel[b.idx])>0&&matches(k,G.wheel[b.idx])))&&(G.notch||0)<10){G.notch=(G.notch||0)+1;notes.push('Notched Bullet: straight bets now pay +'+10*cnt('notch')*G.notch+'%.');}
   {const rate=(G.cls==='bank'?0.05:0)+0.02*cnt('bond');if(rate>0&&G.chips>0){const g=Math.min(Math.round(G.chips*rate),r5(TOLLS[G.night-1]*0.2));if(g>0){income+=g;rc.push([cnt('bond')?'Savings Bond':'Banker interest',g,'r']);notes.push('Interest on the chips you held back: +'+fmt(g)+'.');}}}
   if(has('partner')){const g=Math.max(5,r5(TOLLS[G.night-1]*0.05))*cnt('partner');income+=g;rc.push(['Silent Partner',g,'r']);notes.push('Silent Partner: +'+fmt(g)+'.');}
-  if(has('purse')&&staked<TOLLS[G.night-1]*0.25){const g=Math.max(5,r5(TOLLS[G.night-1]*0.08))*cnt('purse');income+=g;rc.push(["Miser's Purse",g,'r']);notes.push("Miser's Purse: +"+fmt(g)+' for the small bet.');}
+  if(compOn()){const g=Math.max(5,r5(TOLLS[G.night-1]*0.05));income+=g;rc.push(['House comp',g]);notes.push('House comp for the small bet: +'+fmt(g)+'.');if(has('purse')){const g2=Math.max(5,r5(TOLLS[G.night-1]*0.08))*cnt('purse');income+=g2;rc.push(["Miser's Purse",g2,'r']);notes.push("Miser's Purse: +"+fmt(g2)+'.');}}
   const sp=G.spinInfo||{};let tampered=false,eyed=false;
   G.balls.forEach(b=>{const p=G.wheel[b.idx],seen=G.watch.includes(b.idx);
     if(seen){eyed=true;notes.push('The Eye was watching '+(p.void?'that pocket':lab(p.num))+'. '+(has('blinders')?'Horse Blinders: your bets off the numbers paid in full.':'It paid only half.'));}
@@ -1496,7 +1514,7 @@ function endNight(){
     for(let i=0;i<cnt('bounty');i++){const k=['nudge','magnet','ball'][Math.floor(Math.random()*3)],kn=k==='ball'?'Extra Ball':k==='magnet'?'Magnet':'Nudge';G.charges[k]++;notes+=' Bounty Poster: +1 '+kn+'.';bon.push('<span class="bonl"><b>+1 '+termBtn('t:'+k,kn)+'</b> from your Bounty Poster</span>');}}
   if(has('deed')){const i=Math.min(Math.round(G.chips*0.15),Math.round(t*0.25));G.chips+=i;notes+=' Claim Deed interest: +'+fmt(i)+'.';bon.push('<span class="bonl"><b>+'+fmt(i)+' chips</b> of Claim Deed interest</span>');}
   if(G.night>=8){gameOver(true);return;}
-  G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.trades=0;G.tr=null;G.res=notes;G.tip='';G.shopTab='r';G.shopSel=null;if(G.night===7)G.bossPre=Math.max(TOLLS[7],r5(G.chips*0.6));G.freeLeft=1+cnt('spade')+(G.kitFree>0?1:0)+(G.cls==='wreck'?1:0);if(G.kitFree>0)G.kitFree--;rollShop();
+  G.mode='shop';G.rerolls=0;G.balls=[];G.hits=[];G.watch=[];G.lucky=[];G.bought={r:0,t:0,s:0};G.limBought=false;G.trades=0;G.tr=null;G.res=notes;G.tip='';G.shopTab='r';G.shopSel=null;if(G.night===7)G.bossPre=Math.max(TOLLS[7],r5(G.chips*0.6));G.freeLeft=1+cnt('spade')+(G.kitFree>0?1:0)+(G.cls==='wreck'?1:0);if(G.kitFree>0)G.kitFree--;rollShop();
   say(dread()<0.4?'"Have a look at the back room before you go. Cash only."':'The back room is larger than the building. The shelves go down.');
   render();
   if(bon.length){dealerSay([],'To the back room',early?'Left early':'Tab paid',['Tab paid: '+fmt(t)+'.'].concat(bon));try{const cb=document.querySelector('#stats b');if(cb){cb.classList.remove('bump');void cb.offsetWidth;cb.classList.add('bump');}}catch(e){}}
@@ -1617,6 +1635,7 @@ const sec=(h,a)=>'<h4>'+h+'</h4>'+li(a);
 const SHEETS={
  bet:{t:'How to bet',d:'Placing chips, reading the table',f:()=>sec('Placing bets',['Pick a chip size, then tap a number, a color or a group. Tap again to add more.','The round dots between two numbers bet on both. The square dots where four meet bet on all four.','<b>Remove</b> takes chips back off a bet. <b>Rebet</b> repeats your last spin. <b>Clear</b> takes everything back.'])+
    sec('Reading the table',['Once chips are down, every spot and every pocket shows what you would win or lose if the ball lands there.','The % is your real chance on tonight\'s wheel.','Tap any pocket on the wheel to see what it does.'])+
+   sec('Table limit',['You can put up to <b>'+fmt(tableLimit())+'</b> on the table each spin tonight. It grows with the tab. The Lucky Draw is extra.','Raise it for good in the back room (Tricks tab), or with relics.','<b>House comp:</b> a spin where you bet half the limit or less pays you '+fmt(Math.max(5,r5(TOLLS[G.night-1]*0.05)))+' chips (5% of the tab), win or lose. Not against the House on night 8.'])+
    sec('The night',['You get '+(5+cnt('watch'))+' spins to cover the tab. Pay it at closing time or the run ends.','Covered early? Pay and leave, and get 10% of the tab back for each unused spin (up to 5).'])},
  heat:{t:'Heat',d:'What it pays, what it costs, and how to cool it',f:()=>'<p class="lede">How sure Silas is that you are cheating. The hotter you run, the more every win pays, and the closer you are to getting caught.</p>'+
    '<div class="now">Heat now: <b>'+G.heat+'</b> / 100. Wins pay <b>+'+heatPct()+'%</b>.</div>'+
@@ -1647,7 +1666,7 @@ const SHEETS={
    sec('The curses',['Lose 10% of your chips','A dark pocket opens','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'])+
    (G.night>=4?sec('Dark pockets',[has('felt')?'With The Thing in the Felt, a ball in one gives every bet back.':'A ball that lands in one swallows every bet on the table.',has('unwritten')?'The Unwritten Square lets you bet on them, 2 to 1.':'']):'')},
  eye:{t:'The Eye',d:'The pockets that pay half',f:()=>G.night<4?'<p class="lede">It opens on night 4.</p>':sec('How it works',['Each spin the Eye watches a few pockets, marked in violet on the wheel and the table.','A ball that lands on one pays only half of what it should.','It moves every spin. After a win, it moves onto the pocket you won on.'])+'<div class="now">Watching now: <b>'+(watchTxt()||'nothing')+'</b></div>'},
- shop:{t:'The back room',d:'Buying relics, tools and tricks',f:()=>sec('Each night',['After you pay the tab, spend what is left. Your first wheel tool each night is free.','Buy up to 2 relics, 2 wheel tools and 2 tricks.','Restock for new offers, up to 2 times. The price doubles each time.'])+
+ shop:{t:'The back room',d:'Buying relics, tools and tricks',f:()=>sec('Each night',['After you pay the tab, spend what is left. Your first wheel tool each night is free.','Buy up to 2 relics, 2 wheel tools and 2 tricks.','<b>Raise the Stakes</b> (Tricks tab) lifts your table limit for the rest of the run. One a night.','Restock for new offers, up to 2 times. The price doubles each time.'])+
    sec('Rarity',(()=>{const o=rarOdds(Math.max(1,G.night));return ['Every relic is <span class="rr1">Common</span>, <span class="rr2">Rare</span> or <span class="rr3">Legendary</span>. Rarer relics cost more.','Each shelf slot tonight: Common '+o[0]+'%, Rare '+o[1]+'%, Legendary '+o[2]+'%. The odds get better on later nights.','Relics from your own path and relics that work with what you carry show up twice as often.'];})())+
    sec('Trading with Silas',['The Trade tab takes relics you do not want. Two trades a night.','<b>Sell:</b> 1 relic for chips.','<b>Swap:</b> 1 relic for a random relic of the same rarity, from the path you pick.','<b>Trade up:</b> 2 relics of the same rarity for 1 relic of the next rarity, from the path you pick.'])+
    sec('Prices',['Most relics stack, but each copy you own raises the price of the next.','Each Branding Iron makes the next cost 1.5 times as much.','Prices grow with the tab.'])}
@@ -1807,6 +1826,7 @@ const LINK={horseshoe:['surething','eye','streak','heavy'],preacher:['eye','hors
  fever:['lamp','tooth','assay','colorblind'],lamp:['fever','claim','strike','hardware'],paydirt:['pan','fever','hardware','partner'],dust:['tooth','fever','lamp','wanted'],strike:['charm','rabbit','clover','tooth'],
  lastcall:['sore','watch','barrel','deadeye'],encore:['wind','watch','streak','surething'],comeback:['sore','snake','longshot','deadeye'],lap:['streak','wind','partner','purse'],
  scrap:['heavy','spade','hardware','deed'],nails:['felt','unwritten','reach','longshot'],hardware:['undertaker','heavy','brush','claim'],
+ pin:['roll','backroom','surething','outlaw'],roll:['streak','wind','encore','pin'],backroom:['longshot','deadeye','notch','pin'],
  early:['bounty','watch','credit','encore'],purse:['bond','partner','deed','lap'],standing:['dividend','deed','credit','hardware'],dividend:['standing','partner','ticket','clover'],
  star:['rabbit','charm','longshot','strike'],seventh:['clover','ticket','penny','watch'],raffle:['pity','rabbit','ace','gloves'],pity:['wishbone','raffle','sore','snake'],ticket:['clover','seventh','penny','dividend']};
 const linked=(a,b)=>(LINK[a]&&LINK[a].includes(b))||(LINK[b]&&LINK[b].includes(a));
@@ -1817,6 +1837,7 @@ const SYN=(()=>{const m={};for(const a in SYN0)SYN0[a].forEach(b=>{(m[a]=m[a]||n
 function synTag(kind,id){const own=[...new Set(G.relics)];
   if(kind==='r'){if(own.some(o=>o!==id&&direct(o,id)))return '<span class="syn">\u2726 Something you carry pairs with this</span>';if(own.some(o=>o!==id&&linked(o,id)))return '<span class="syn fit">\u2727 This would help something you carry</span>';return '';}
   return own.some(o=>(TSYN[id]||[]).includes(o))?'<span class="syn fit">\u2727 Something you carry could use this</span>':'';}
+function limCard(sel){const p=limUpPrice(),nb=nextLimBase(),now=r5(nb*limMult()),nx=r5(nb*(limMult()+0.25)),a=G.chips-p,nxt=nextTab();return '<button class="card q2'+(G.limBought?' sold':'')+(sel==='lim'?' on':'')+'" data-act="limUp"'+(G.limBought?' disabled':'')+'><b>Raise the Stakes</b><i class="bld">Table limit</i>Silas raises your table limit by a quarter of the tab, for the rest of the run. One a night. Each raise costs 1.5 times the last. <i class="hint">Tomorrow: '+fmt(now)+' becomes '+fmt(nx)+' a spin.</i><span class="p">'+(G.limBought?'Raised tonight':sel==='lim'?'<b class="buy">Tap again to buy \u00B7 '+fmt(p)+'</b><span class="lv'+(a<nxt&&G.night<7?' bad':'')+'">leaves '+fmt(a)+'</span>':fmt(p)+' chips')+'</span></button>';}
 function shopHTML(){
   const rc=restockCost(),nx=nextTab(),short=nx-G.chips,tab=G.armed!==null?'t':(G.shopTab||'r'),sel=G.shopSel||'';
   const left=p=>{const a=G.chips-p;return '<span class="lv'+(a<nx&&G.night<7?' bad':'')+'">leaves '+fmt(a)+(a<nx&&G.night<7?' \u00B7 '+fmt(nx-a)+' short of tomorrow':'')+'</span>';};
@@ -1827,8 +1848,8 @@ function shopHTML(){
   const tb=(k,l,n)=>'<button data-act="shopTab" data-t="'+k+'" class="'+(tab===k?'on':'')+'">'+l+(n?' <i>'+n+'</i>':'')+'</button>';
   return '<div class="felt"><div class="nexttab shopbar'+(short>0&&G.night<7?' bad':'')+'">'+(G.night===7?'Night 8: no tab. The House itself sits down at the table, with about <b>'+fmt(nx)+'</b> health (60% of the chips you walked in here with).':'You have <b>'+fmt(G.chips)+'</b> \u00B7 Tomorrow\'s tab <b>'+fmt(nx)+'</b>'+(G.night===6?' (40% of your chips, or '+fmt(tabFor(7))+' if that is more)':'')+' \u00B7 '+(short>0?'<b class="bad">'+fmt(short)+' short</b>, so you will have to win it at the table':'<b class="good">covered, +'+fmt(-short)+' spare</b>'))+'</div>'+(G.tip?'<div class="tipline">'+G.tip+'</div>':'')+
     '<div class="stabs">'+tb('r','Relics',capTxt(G.bought.r))+tb('t','Wheel tools',G.freeLeft>0?G.freeLeft+' free':capTxt(G.bought.t,'t'))+tb('s','Tricks',capTxt(G.bought.s))+tb('x','Trade',tradesLeft()>0?tradesLeft()+' left tonight':'done tonight')+'</div>'+
-    (tab==='r'?(()=>{const o=rarOdds(G.night);return '<div class="hint" style="margin-bottom:6px">On the shelves tonight: <span class="rr1">Common '+o[0]+'%</span> \u00B7 <span class="rr2">Rare '+o[1]+'%</span> \u00B7 <span class="rr3">Legendary '+o[2]+'%</span></div>';})():tab==='x'?'<div class="hint" style="margin-bottom:6px">Silas takes relics in trade, twice a night.</div>':tab==='s'?'<div class="hint" style="margin-bottom:6px">One-time use. They do not come back each night.</div>':tab==='t'?'<div class="hint" style="margin-bottom:6px">Change the wheel for good. Pick a tool, then tap a pocket on the wheel.</div>':'')+
-    '<div class="shop">'+(tab==='r'?rel:tab==='t'?tl:tab==='x'?tradeHTML():tr)+'</div>'+
+    (tab==='r'?(()=>{const o=rarOdds(G.night);return '<div class="hint" style="margin-bottom:6px">On the shelves tonight: <span class="rr1">Common '+o[0]+'%</span> \u00B7 <span class="rr2">Rare '+o[1]+'%</span> \u00B7 <span class="rr3">Legendary '+o[2]+'%</span></div>';})():tab==='x'?'<div class="hint" style="margin-bottom:6px">Silas takes relics in trade, twice a night.</div>':tab==='s'?'<div class="hint" style="margin-bottom:6px">Tricks are one-time use and do not come back each night. Raise the Stakes lasts the whole run.</div>':tab==='t'?'<div class="hint" style="margin-bottom:6px">Change the wheel for good. Pick a tool, then tap a pocket on the wheel.</div>':'')+
+    '<div class="shop">'+(tab==='r'?rel:tab==='t'?tl:tab==='x'?tradeHTML():limCard(sel)+tr)+'</div>'+
     '<div class="row act"><button data-act="reroll"'+(G.rerolls>=rrMax()?' disabled':'')+'>'+(G.rerolls>=rrMax()?'Shelves are bare':'Restock '+(rc?fmt(rc):'free')+' ('+(rrMax()-G.rerolls)+' left)')+'</button><span class="sp" style="flex:1"></span><button class="big" data-act="next">On to night '+(G.night+1)+'</button></div></div>';
 }
 function renderLower(){
@@ -1847,7 +1868,7 @@ function renderLower(){
   h+='<div class="row act">';
   if(G.mode==='bet'){
     {const proj=heatOn()?Math.round(heatPlan()):0,mg=G.magnet>=0&&!locked(),cool=heatOn()&&proj===0&&!mg&&G.heat>0&&totalBets()>0;
-    h+='<button class="big spinb'+(heatOn()&&G.heat+proj>=100?' danger':'')+'" data-act="spin">Spin<span class="tag">Bet '+fmt(totalBets())+'</span>'+(proj>0?'<span class="tag up">Heat +'+proj+'</span>':cool?'<span class="tag cool">Heat -'+coolAmt()+'</span>':'')+(heatTier()?'<span class="tag cool">Wins +'+heatPct()+'%</span>':'')+(mg?'<span class="tag up">Magnet +'+HEAT.mag+' if it hits</span>':'')+'</button>';}
+    h+='<button class="big spinb'+(heatOn()&&G.heat+proj>=100?' danger':'')+'" data-act="spin">Spin<span class="tag">Bet '+fmt(totalBets())+' <i style="font-style:normal;opacity:.7">/ limit '+fmt(tableLimit())+'</i></span>'+(compOn()?'<span class="tag cool">Comp +'+fmt(compAmt())+'</span>':'')+(proj>0?'<span class="tag up">Heat +'+proj+'</span>':cool?'<span class="tag cool">Heat -'+coolAmt()+'</span>':'')+(heatTier()?'<span class="tag cool">Wins +'+heatPct()+'%</span>':'')+(mg?'<span class="tag up">Magnet +'+HEAT.mag+' if it hits</span>':'')+'</button>';}
     if(G.fs){const lk=locked();h+='<button data-act="magnet" class="'+(G.magnet>=0?'on':'')+'"'+(G.charges.magnet>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.magnet>=0&&G.wheel[G.magnet]?'Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)):'Magnet ('+G.charges.magnet+')')+'</button><button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(G.charges.ball>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':''):'Extra Ball ('+G.charges.ball+')')+'</button>';}
     if(G.heat>=10&&!(G.boss&&G.boss.phase>=2)){const dc=drinkCost();h+='<button data-act="drink" class="payok"'+(G.chips>=dc?'':' disabled')+'><span>Buy Silas a drink</span> <span class="bon">('+(dc?fmt(dc)+' chips':'free')+', Heat -25)</span></button>';}
     if(G.night<7&&G.chips+totalBets()>=toll()&&G.spins<5+cnt('watch')){const sh=leaveShort();h+='<button data-act="settle" class="payok'+(sh?' short':'')+'"><span>'+(sh&&G.leaveWarn?'Leave anyway':'Pay '+fmt(toll())+' and leave')+'</span> <span class="bon">'+(sh?'(short for night '+(G.night+1)+': '+fmt(sh.after)+' vs '+fmt(sh.next)+')':'(+'+fmt(earlyBonus(toll()))+' bonus'+(has('bounty')&&G.spins>0?', +'+pls(cnt('bounty'),'trick'):'')+')')+'</span></button>';}
@@ -1934,6 +1955,7 @@ document.addEventListener('click',e=>{
     case'trPath':if(G.tr&&G.tr.act)tradeDo(G.tr.act,b.dataset.b);break;
     case'tool':{const i=+b.dataset.i,it=G.shop.tools[i],k='s'+i;if(it&&!TOOLS[it.type].target&&G.shopSel!==k){G.shopSel=k;sfx.chip();render();}else{G.shopSel=null;buyTool(i);}}break;
     case'reroll':reroll();break;
+    case'limUp':if(G.shopSel!=='lim'){G.shopSel='lim';sfx.chip();render();}else{G.shopSel=null;buyLim();}break;
     case'next':logRun();G.night++;startNight();break;
     case'items':showItems('mine');highlight(b.dataset.hl);break;
     case'invTab':showItems(b.dataset.tab);break;
