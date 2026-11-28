@@ -414,6 +414,7 @@ button.big{font-size:13px;padding:4px 10px}
 #powers button small{display:block;font-size:9.5px;opacity:.75;font-family:inherit}
 .stats small.goal{display:block;font-size:10.5px;opacity:1}.stats small.goal.good{color:#8fe3a0}.stats small.goal.bad{color:#ff9a8a}
 @media (max-width:600px) and (orientation:portrait){#face{display:none}#result{display:none}}
+#wheelPane.spin .ocw{display:none}
 </style>
 </head>
 <body>
@@ -665,7 +666,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v92',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v93',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1631,6 +1632,7 @@ function renderScene(){if(typeof SIM_SKILL==='function')return;const st=$('stage
   $('scSign').textContent=PLACES[n-1].replace(/ Saloon/i,'').toUpperCase();}
 function render(){
   try{renderScene();}catch(e){}
+  try{$('wheelPane').classList.toggle('spin',G.mode==='spinning');}catch(e){}
   $('place').textContent=PLACES[G.night-1];
   $('nightLbl').textContent='Night '+G.night+' of 8';
   $('say').textContent=G.msg;$('result').textContent=G.res;{const rb=$('rcpt');if(rb)rb.innerHTML=rcptHTML();}
