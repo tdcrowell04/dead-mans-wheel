@@ -833,17 +833,17 @@ function tradeDo(kind,b){const T=G.tr;if(!T||G.mode!=='shop'||tradesLeft()<=0)re
   else{if((kind==='swap'&&ids.length!==1)||(kind==='up'&&(ids.length!==2||R0[0].r!==R0[1].r||R0[0].r>=3)))return;
     const pl=tradePool(b,R0[0].r+(kind==='up'?1:0),ids);if(!pl.length){sfx.bad();return;}
     got=pl[Math.floor(Math.random()*pl.length)];drop();G.relics.push(got.id);tip('');
-    dealerSay(['"Pleasure doin\' business."'],'Take it','Trade',['You slide '+R0.map(r=>'<b>'+r.name+'</b>').join(' and ')+' across the counter.','Silas reaches under it and hands you <b>'+got.name+'</b> ('+rarTxt(got)+').','<span class="tinfo">'+rdesc(got)+'</span>']);}
+    dealerSay([],'Take it','Trade',['You hand '+R0.map(r=>'<b>'+r.name+'</b>').join(' and ')+' to the peddler.','He digs through his coat and hands you <b>'+got.name+'</b> ('+rarTxt(got)+').','<span class="tinfo">'+rdesc(got)+'</span>']);}
   G.trades=(G.trades||0)+1;G.tr={sel:[],act:null};G.log.buys.push({n:G.night,trade:kind,gave:ids,got:got?got.id:undefined});repriceShop();sfx.buy();render();}
 function tradeHTML(){const T=G.tr||(G.tr={sel:[],act:null});T.sel=T.sel.filter(i=>i<G.relics.length);const sel=T.sel,left=tradesLeft(),R0=sel.map(i=>RELICS.find(x=>x.id===G.relics[i])),ids=sel.map(i=>G.relics[i]);
   let top='';
-  if(left<=0)top='<div class="trbox">Silas is done dealing for tonight.</div>';
+  if(left<=0)top='<div class="trbox">The peddler has packed up for tonight.</div>';
   else if(!sel.length)top='<div class="trbox">Tap <b>1 relic</b> to sell it or swap it. Tap <b>2 of the same rarity</b> to trade them up for 1 relic of the next rarity. You pick the path it comes from.</div>';
   else{const up=sel.length===2,okUp=up&&R0[0].r===R0[1].r&&R0[0].r<3,rr=up?R0[0].r+1:R0[0].r;
     if(up&&!okUp)top='<div class="trbox">'+(R0[0].r!==R0[1].r?'Those two are not the same rarity.':'Legendary relics cannot be traded up.')+' Tap one to put it back.</div>';
     else if(T.act){top='<div class="trbox"><b>Which path should the '+RARN[rr]+' relic come from?</b><div class="trpaths">'+Object.keys(BUILDS).map(p=>{const n=tradePool(p,rr,ids).length;return '<button data-act="trPath" data-b="'+p+'"'+(n?'':' disabled')+'>'+BUILDS[p][0]+'<i>'+(n?'1 of '+n:'none left')+'</i></button>';}).join('')+'</div><button data-act="trAct" data-k="">Back</button></div>';}
     else top='<div class="trbox">'+(up?'<button class="big" data-act="trAct" data-k="up">Trade both for 1 '+RARN[rr]+' relic</button>':'<button class="big" data-act="trAct" data-k="sell">Sell for '+fmt(sellVal(ids[0]))+' chips</button><button class="big" data-act="trAct" data-k="swap">Swap for another '+RARN[rr]+' relic</button>')+'</div>';}
-  return top+(G.relics.length?G.relics.map((id,i)=>{const r=RELICS.find(x=>x.id===id),on=sel.includes(i);return '<button class="card q'+r.r+(r.cosmic?' cosmic':'')+(on?' on':'')+'" data-act="trSel" data-i="'+i+'"'+(left<=0?' disabled':'')+'><b>'+r.name+'</b>'+bTag(r)+bdesc(r)+'<span class="p">'+(on?'<b class="buy">On the counter</b>':'Sells for '+fmt(sellVal(id)))+'</span></button>';}).join(''):'<div class="hint">You carry no relics to trade.</div>');}
+  return top+(G.relics.length?G.relics.map((id,i)=>{const r=RELICS.find(x=>x.id===id),on=sel.includes(i);return '<button class="card q'+r.r+(r.cosmic?' cosmic':'')+(on?' on':'')+'" data-act="trSel" data-i="'+i+'"'+(left<=0?' disabled':'')+'><b>'+r.name+'</b>'+bTag(r)+bdesc(r)+'<span class="p">'+(on?'<b class="buy">Offered</b>':'Sells for '+fmt(sellVal(id)))+'</span></button>';}).join(''):'<div class="hint">You carry no relics to trade.</div>');}
 const toolPrice=k=>{const b=k==='brand'?r5(price(TOOLS.brand.base)*Math.pow(1.5,G.brands||0)):price(TOOLS[k].base);return has('hardware')&&TOOLS[k].target?r5(b/2):b;};
 const dread=()=>(G.night-1)/7;
 
@@ -852,7 +852,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v114',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v115',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1179,7 +1179,7 @@ function peek(target){
   clearTimeout(peek.t);peek.t=setTimeout(()=>{o.classList.remove('peek');el.classList.remove('peekhl');},2300);
 }
 const CURSE_LIST=['Lose 10% of your chips','A dark pocket opens in the wheel','Lose one trick','Tonight\'s tab goes up 15%','A gold pocket loses its gold','Another zero grows on the wheel','Your next win is halved','Lose a spin'];
-const ICONS={'Pardoned':'\u2696','Left early':'\u{1F4B0}','Tab paid':'\u{1F4B0}','Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
+const ICONS={'Trade':'\u21C4','Pardoned':'\u2696','Left early':'\u{1F4B0}','Tab paid':'\u{1F4B0}','Lucky Draw':'\u2605','Zero curse':'\u2620','Heat':'\u{1F525}'};
 function dealerSay(lines,btn,title,info){
   const o=$('overlay'),sp=(lines||[]).filter(Boolean).map(callYou),inf=(info||[]).filter(Boolean);
   o.innerHTML='<div class="modal dlg">'+(sp.length?'<div class="portrait">'+dealerSVG(G.night)+'</div>':'<div class="nicon">'+(ICONS[title]||'\u2726')+'</div>')+'<h3>'+(title||dealerName())+'</h3>'+
@@ -1676,7 +1676,7 @@ const SHEETS={
  eye:{t:'The Eye',d:'The pockets that pay half',f:()=>G.night<4?'<p class="lede">It opens on night 4.</p>':sec('How it works',['Each spin the Eye watches a few pockets, marked in violet on the wheel and the table.','A ball that lands on one pays only half of what it should.','It moves every spin. After a win, it moves onto the pocket you won on.'])+'<div class="now">Watching now: <b>'+(watchTxt()||'nothing')+'</b></div>'},
  shop:{t:'The back room',d:'Buying relics, tools and tricks',f:()=>sec('Each night',['After you pay the tab, spend what is left. Your first wheel tool each night is free.','Buy up to 2 relics, 2 wheel tools and 2 tricks.','<b>Raise the Stakes</b> (Tricks tab) lifts your table max for the rest of the run. One a night.','Restock for new offers, up to 2 times. The price doubles each time.'])+
    sec('Rarity',(()=>{const o=rarOdds(Math.max(1,G.night));return ['Every relic is <span class="rr1">Common</span>, <span class="rr2">Rare</span> or <span class="rr3">Legendary</span>. Rarer relics cost more.','Each shelf slot tonight: Common '+o[0]+'%, Rare '+o[1]+'%, Legendary '+o[2]+'%. The odds get better on later nights.','Relics from your own path and relics that work with what you carry show up twice as often.'];})())+
-   sec('Trading with Silas',['The Trade tab takes relics you do not want. Two trades a night.','<b>Sell:</b> 1 relic for chips.','<b>Swap:</b> 1 relic for a random relic of the same rarity, from the path you pick.','<b>Trade up:</b> 2 relics of the same rarity for 1 relic of the next rarity, from the path you pick.'])+
+   sec('The peddler',['A peddler sits in the back room and takes relics you do not want. He is no friend of the house. Two trades a night.','<b>Sell:</b> 1 relic for chips.','<b>Swap:</b> 1 relic for a random relic of the same rarity, from the path you pick.','<b>Trade up:</b> 2 relics of the same rarity for 1 relic of the next rarity, from the path you pick.'])+
    sec('Prices',['Most relics stack, but each copy you own raises the price of the next.','Each Branding Iron makes the next cost 1.5 times as much.','Prices grow with the tab.'])}
 };
 function showSheet(k,back){
@@ -1858,7 +1858,7 @@ function shopHTML(){
   const tb=(k,l,n)=>'<button data-act="shopTab" data-t="'+k+'" class="'+(tab===k?'on':'')+'">'+l+(n?' <i>'+n+'</i>':'')+'</button>';
   return '<div class="felt"><div class="nexttab shopbar'+(short>0&&G.night<7?' bad':'')+'">'+(G.night===7?'Night 8: no tab. The House itself sits down at the table, with about <b>'+fmt(nx)+'</b> health (60% of the chips you walked in here with).':'You have <b>'+fmt(G.chips)+'</b> \u00B7 Tomorrow\'s tab <b>'+fmt(nx)+'</b>'+(G.night===6?' (40% of your chips, or '+fmt(tabFor(7))+' if that is more)':'')+' \u00B7 '+(short>0?'<b class="bad">'+fmt(short)+' short</b>, so you will have to win it at the table':'<b class="good">covered, +'+fmt(-short)+' spare</b>'))+'</div>'+(G.tip?'<div class="tipline">'+G.tip+'</div>':'')+
     '<div class="stabs">'+tb('r','Relics',capTxt(G.bought.r))+tb('t','Wheel tools',G.freeLeft>0?G.freeLeft+' free':capTxt(G.bought.t,'t'))+tb('s','Tricks',capTxt(G.bought.s))+tb('x','Trade',tradesLeft()>0?tradesLeft()+' left tonight':'done tonight')+'</div>'+
-    (tab==='r'?(()=>{const o=rarOdds(G.night);return '<div class="hint" style="margin-bottom:6px">On the shelves tonight: <span class="rr1">Common '+o[0]+'%</span> \u00B7 <span class="rr2">Rare '+o[1]+'%</span> \u00B7 <span class="rr3">Legendary '+o[2]+'%</span></div>';})():tab==='x'?'<div class="hint" style="margin-bottom:6px">Silas takes relics in trade, twice a night.</div>':tab==='s'?'<div class="hint" style="margin-bottom:6px">Tricks are one-time use and do not come back each night. Raise the Stakes lasts the whole run.</div>':tab==='t'?'<div class="hint" style="margin-bottom:6px">Change the wheel for good. Pick a tool, then tap a pocket on the wheel.</div>':'')+
+    (tab==='r'?(()=>{const o=rarOdds(G.night);return '<div class="hint" style="margin-bottom:6px">On the shelves tonight: <span class="rr1">Common '+o[0]+'%</span> \u00B7 <span class="rr2">Rare '+o[1]+'%</span> \u00B7 <span class="rr3">Legendary '+o[2]+'%</span></div>';})():tab==='x'?'<div class="hint" style="margin-bottom:6px">A peddler in the back room takes relics in trade, twice a night.</div>':tab==='s'?'<div class="hint" style="margin-bottom:6px">Tricks are one-time use and do not come back each night. Raise the Stakes lasts the whole run.</div>':tab==='t'?'<div class="hint" style="margin-bottom:6px">Change the wheel for good. Pick a tool, then tap a pocket on the wheel.</div>':'')+
     '<div class="shop">'+(tab==='r'?rel:tab==='t'?tl:tab==='x'?tradeHTML():limCard(sel)+tr)+'</div>'+
     '<div class="row act"><button data-act="reroll"'+(G.rerolls>=rrMax()?' disabled':'')+'>'+(G.rerolls>=rrMax()?'Shelves are bare':'Restock '+(rc?fmt(rc):'free')+' ('+(rrMax()-G.rerolls)+' left)')+'</button><span class="sp" style="flex:1"></span><button class="big" data-act="next">On to night '+(G.night+1)+'</button></div></div>';
 }
