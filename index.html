@@ -687,7 +687,7 @@ function bossCheck(net){const B=G.boss;if(!B)return null;let dn=bossRule('double
   if(B.phase===2&&B.hp<=B.max/3){B.phase=3;G.spins+=2;up=3;}
   return up;}
 const r5=x=>Math.max(5,Math.round(x/5)*5);
-const price=b=>r5(b*TOLLS[G.night-1]/60);
+const price=b=>Math.max(5,r5(b*Math.pow(TOLLS[G.night-1]/60,0.6)));
 const toolPrice=k=>k==='brand'?r5(price(TOOLS.brand.base)*Math.pow(1.5,G.brands||0)):price(TOOLS[k].base);
 const dread=()=>(G.night-1)/7;
 
@@ -696,7 +696,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v98',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v99',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
