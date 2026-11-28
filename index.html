@@ -729,7 +729,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v104',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v105',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1533,7 +1533,7 @@ function intro(){
 function pickStart(){
   const sh=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]),opts=sh(Object.keys(CLASSES)).slice(0,3);
   $('overlay').innerHTML='<div class="modal"><h3>Who pushes through the doors tonight?</h3><p class="hint">Pick who you are. Each one plays differently. Every relic in the back room is still open to all of them.</p><div class="shop">'+
-   opts.map(c=>{const C=CLASSES[c],r=RELICS.find(x=>x.id===C.relic);return '<button class="card clscard" data-act="start" data-cls="'+c+'"><b>'+C.n+'</b><i class="bld">'+BUILDS[c][1]+'</i><span class="clsp"><u>Always on</u>'+C.p+'</span><span class="clsk"><u>Starts with</u><em>'+r.name+':</em> '+bdesc(r)+' Also '+KITS[c][0]+'.</span></button>';}).join('')+'</div></div>';
+   opts.map(c=>{const C=CLASSES[c],r=RELICS.find(x=>x.id===C.relic);return '<button class="card clscard" data-act="start" data-cls="'+c+'"><b>'+C.n+'</b><i class="bld">'+BUILDS[c][1]+'</i><span class="clsp"><u>Passive ability</u>'+C.p+'</span><span class="clsk"><u>Starts with</u><em>'+r.name+':</em> '+bdesc(r)+' Also '+KITS[c][0]+'.</span></button>';}).join('')+'</div></div>';
 }
 
 /* ---------- rendering ---------- */
@@ -1767,7 +1767,7 @@ document.addEventListener('click',e=>{
     case'sendFb':sendFeedback();break;
     case'restart':sendFeedback(true);newGame();$('overlay').className='';applyDread();render();pickStart();$('overlay').className='show';break;
     case'luckSet':{if(G.mode!=='bet')break;const stp=luckSteps(),want=stp[+b.dataset.v],old=G.bets.luck||0;if(old===want){G.chips+=old;delete G.bets.luck;}else if(G.chips+old<want){sfx.bad();tip('Not enough chips for that Lucky Draw ticket.');}else{G.chips+=old-want;G.bets.luck=want;sfx.chip();tip('Lucky Draw: a star wins '+TIERN[luckTier(want)]+'.');}render();}break;
-    case'cls':if(G.cls&&CLASSES[G.cls])dealerSay([],'Got it',CLASSES[G.cls].n,['<b>Always on:</b> '+CLASSES[G.cls].p,'<b>You started with:</b> '+RELICS.find(x=>x.id===CLASSES[G.cls].relic).name+', and '+KITS[G.cls][0]+'.','Every relic in the back room is open to you. It stocks a few more that suit you.']);break;
+    case'cls':if(G.cls&&CLASSES[G.cls])dealerSay([],'Got it',CLASSES[G.cls].n,['<b>Passive ability:</b> '+CLASSES[G.cls].p,'<b>You started with:</b> '+RELICS.find(x=>x.id===CLASSES[G.cls].relic).name+', and '+KITS[G.cls][0]+'.','Every relic in the back room is open to you. It stocks a few more that suit you.']);break;
     case'spin':spin();break;
     case'drink':drink();break;
     case'finePay':$('overlay').className='';fineSettle(null);render();logRun();if(NEXT_DLG){const f=NEXT_DLG;NEXT_DLG=null;f();}break;
