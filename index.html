@@ -434,6 +434,7 @@ body:not(.fs) .outs>.spot{min-height:82px}body:not(.fs) .luckwrap .spot{min-heig
 .brules{background:rgba(120,10,20,.4);border:1px solid #c0392b;border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:13px;color:#ffd9d2}
 .brh{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#ff9a8a}.brh i{font-style:normal;opacity:.7;text-transform:none;letter-spacing:0;margin-left:6px}
 .brl{margin-top:5px}.brl b{display:block;color:#fff;font-family:'Rye',serif;font-weight:400;font-size:15px}.brl span{display:block}.brl em{display:block;font-style:normal;margin-top:2px;min-height:2.5em;color:#ffd9d2;opacity:.9}.brl em.ok{color:#8fe3a0;opacity:1}.brl em.no{color:#ffd76b;opacity:1}
+.brn{margin-top:6px;padding-top:5px;border-top:1px dashed rgba(255,154,138,.45);font-size:12px;color:#ffb4a8}.brn b{color:#fff;font-weight:400}
 </style>
 </head>
 <body>
@@ -687,12 +688,16 @@ function bossRuleHTML(){const B=G.boss;if(!B)return '';const e=Object.entries(G.
     if(r==='allin'){const need=Math.ceil(all/2);return totalBets()>=need?['ok','Good. '+fmt(totalBets())+' on the table.']:['no','Not yet. '+fmt(totalBets())+' on the table, you need '+fmt(need)+'.'];}
     if(r==='inside')return ['','The closed boxes are greyed out.'];
     return null;};
-  return '<div class="brules"><div class="brh">The House\'s rule'+(B.rules.length>1?'s':'')+' for this spin <i>changes every spin</i></div>'+B.rules.map(r=>{const x=st(r);return '<div class="brl"><b>'+BRULES[r].n+'</b><span>'+BRULES[r].d+'</span>'+(x?'<em class="'+x[0]+'">'+(x[0]==='ok'?'\u2713 ':x[0]==='no'?'\u2717 ':'')+x[1]+'</em>':'')+'</div>';}).join('')+'</div>';}
+  return '<div class="brules"><div class="brh">The House\'s rule'+(B.rules.length>1?'s':'')+' for this spin <i>changes every spin, no repeats until all nine are used</i></div>'+B.rules.map(r=>{const x=st(r);return '<div class="brl"><b>'+BRULES[r].n+'</b><span>'+BRULES[r].d+'</span>'+(x?'<em class="'+x[0]+'">'+(x[0]==='ok'?'\u2713 ':x[0]==='no'?'\u2717 ':'')+x[1]+'</em>':'')+'</div>';}).join('')+'<div class="brn">'+(G.spins>1&&B.next&&B.next.length?'Next spin: <b>'+B.next.map(r=>BRULES[r].n).join('</b> and <b>')+'</b>':'This is your last spin.')+'</div></div>';}
 const watchTxt=()=>{const w=watchNames();return w.length>6?w.slice(0,5).join(', ')+' and '+(w.length-5)+' more':w.join(', ');};
 const bossRule=r=>!!(G.night===8&&G.boss&&G.boss.rules.includes(r));
-function bossRules(){const B=G.boss;if(!B)return;const pool=Object.keys(BRULES).filter(r=>(r!=='dark'||G.wheel.some(p=>p.void))&&(r!=='stars'||G.lucky.length)),want=B.phase>=3?2:1;
-  let opts=pool.filter(r=>!(want===1&&B.rules.length===1&&B.rules[0]===r));if(opts.length<want)opts=pool;
-  B.rules=opts.map(r=>[Math.random(),r]).sort((a,b)=>a[0]-b[0]).slice(0,want).map(x=>x[1]);}
+const BRESTRICT=['number','spread','allin','inside'];
+function bossDraw(want,have){const B=G.boss,ok=r=>(r!=='dark'||G.wheel.some(p=>p.void))&&(r!=='stars'||G.lucky.length),out=(have||[]).slice();let guard=0;
+  while(out.length<want&&guard++<40){if(!B.deck||!B.deck.length)B.deck=Object.keys(BRULES).map(r=>[Math.random(),r]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+    const i=B.deck.findIndex(r=>ok(r)&&!out.includes(r)&&!(BRESTRICT.includes(r)&&out.some(x=>BRESTRICT.includes(x))));
+    if(i<0){B.deck=[];continue;}out.push(B.deck.splice(i,1)[0]);}
+  return out;}
+function bossRules(){const B=G.boss;if(!B)return;const want=B.phase>=3?2:1;B.rules=bossDraw(want,(B.next||[]).slice(0,want));B.next=bossDraw(want,[]);}
 function bossCheck(net){const B=G.boss;if(!B)return null;let dn=bossRule('double')?net*2:net;if(dn>0){B.armored=dn>B.max*0.4;dn=Math.min(dn,r5(B.max*0.4));}else B.armored=false;B.hp=Math.min(B.max,Math.max(0,B.hp-dn));
   if(B.hp<=0)return 'dead';let up=null;
   if(B.phase===1&&B.hp<=B.max*2/3){B.phase=2;G.spins+=2;up=2;}
@@ -708,7 +713,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v101',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v102',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
