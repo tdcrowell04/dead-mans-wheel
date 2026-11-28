@@ -424,6 +424,8 @@ button.big{font-size:13px;padding:4px 10px}
 .spot .mx{font-style:normal;font-size:.68em;color:#1a0d06;background:#f4ecd8;border-radius:4px;padding:0 3px;margin-left:3px;vertical-align:middle}
 .markov{fill:rgba(244,236,216,.28);stroke:#fff;stroke-width:3.5;stroke-dasharray:6 3;pointer-events:none}
 .mskull{fill:#f4ecd8;text-anchor:middle;dominant-baseline:central;pointer-events:none;paint-order:stroke;stroke:#000;stroke-width:2.5px}
+.board.magarm .spot{box-shadow:0 0 0 1.5px rgba(255,255,255,.8) inset}
+.board.magarm .hot{visibility:hidden}
 .placard{display:flex;align-items:center;justify-content:center;gap:10px;width:max-content;max-width:100%;margin:0 auto 6px;padding:2px 14px;height:24px;box-sizing:border-box;border-radius:5px;border:1px solid #6e531c;background:linear-gradient(#e2bd62,#b88a2e);color:#24160a;font-family:'Rye',serif;font-size:11.5px;letter-spacing:.09em;line-height:1;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 2px 4px rgba(0,0,0,.45)}
 .placard b{font-weight:400;font-size:14px;letter-spacing:0}
 .placard i{font-style:normal;font-size:9px;opacity:.6}
@@ -852,7 +854,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v115',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v116',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1752,7 +1754,7 @@ function renderWheel(){
 }
 function armText(){
   if(G.mode==='shop'&&G.armed!==null){const it=G.shop.tools[G.armed];return it&&it.left>0?'TAP ANOTHER|POCKET|('+it.left+' MORE)':'TAP A|POCKET';}
-  if(G.mode==='bet'&&G.armed==='magnet')return 'TAP A|POCKET';
+  if(G.mode==='bet'&&G.armed==='magnet')return 'TAP A|NUMBER|OR POCKET';
   if(G.mode==='nudge'&&G.armed==='nudge')return 'TAP A|GLOWING|POCKET';
   return '';
 }
@@ -1766,7 +1768,7 @@ function boardHTML(){
   const wn=new Set(G.watch.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num)),ln=new Set(G.lucky.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num));
   const mkn=markNum(),cell=(k,label,cls,st8)=>{const st=G.bets[k],w=wn.has(+k.slice(1)),lk=ln.has(+k.slice(1)),mk=mkn!=null&&+k.slice(1)===mkn;return '<button class="spot '+cls+(st?' bet':'')+(w?' watched':'')+(lk?' lucky':'')+(mk?' marked':'')+'" data-bet="'+k+'" style="'+st8+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'><span class="l">'+(mk?'<i class="msk">\u2620</i>':'')+(lk?'<i class="ls">★</i>':'')+(w?'👁 ':'')+label+(mk?'<i class="mx">x'+(1+cnt('marked'))+'</i>':'')+'</span>'+(st?'<span class="stake">'+abbr(st)+'</span>':'')+spotOutcome(k,st)+'</button>';};
   const hot=(k,x,y)=>{const st=G.bets[k];return '<button class="hot'+(k[0]==='c'?' cn':'')+(st?' has':'')+'" data-bet="'+k+'" style="left:'+f(V?(3-y)/3*100:x/W*100)+';top:'+f(V?x/W*100:y/3*100)+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'>'+(st?abbr(st):'')+'</button>';};
-  let h='<div class="board'+(V?' vert':'')+(totalBets()>0?' live':'')+'"'+(V?' style="height:'+W*44+'px"':'')+'>';
+  let h='<div class="board'+(V?' vert':'')+(totalBets()>0?' live':'')+(G.mode==='bet'&&G.armed==='magnet'?' magarm':'')+'"'+(V?' style="height:'+W*44+'px"':'')+'>';
   const zs=G.zeros.slice().sort((a,b)=>b-a),zh=3/zs.length;
   zs.forEach((z,j)=>{h+=cell('n'+z,lab(z),'green',rect(0,j*zh,1,zh));});
   for(let v=1;v<=N;v++)h+=cell('n'+v,v,numCol(v),rect(colOf(v),rowOf(v),1,1));
@@ -1912,7 +1914,7 @@ function render(){
   const bet=G.mode==='bet'&&!locked();
   $('eyeLine').innerHTML=(G.watch.length&&G.mode!=='shop'?'<button class="tapbox eyebtn" data-act="sheet" data-t="eye">👁 <b>'+watchTxt()+'</b> pay half<span class="qi">?</span></button>':'');
   $('heatBox').innerHTML=heatOn()?'<button class="tapbox" data-act="sheet" data-t="heat"><span class="heatlbl" style="display:block">Heat <b>'+G.heat+'</b> / 100'+(heatTier()?' · wins +'+heatPct()+'%':'')+(locked()?' · tricks locked':'')+'<span class="qi">?</span></span><span class="heatbar" style="display:block"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:25%"></u><u style="left:50%"></u><u style="left:75%"></u>'+(()=>{const pj=G.mode==='bet'?Math.round(heatPlan()*heatGain()+(G.magnet>=0?HEAT.mag*heatGain():0)):0;return pj>0?'<em style="left:'+Math.min(100,G.heat)+'%;width:'+Math.min(100-Math.min(100,G.heat),pj)+'%"></em>':'';})()+'</span><span class="hz"><b'+(G.heat<25?' class="on"':'')+'>Calm</b><b'+(G.heat>=25&&G.heat<50?' class="on"':'')+'>Wins +'+(G.cls==='cheat'?20:10)+'%</b><b'+(G.heat>=50&&G.heat<75?' class="on"':'')+'>Wins +'+(G.cls==='cheat'?40:20)+'%</b><b'+(G.heat>=75?' class="on"':'')+'>+'+(G.cls==='cheat'?60:30)+'%, locked</b></span></button>':'';
-  $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(locked()?'\u{1F512} ':'')+(G.armed==='magnet'?'Magnet: now tap a pocket':G.magnet>=0&&G.wheel[G.magnet]?'Magnet: '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' \u2715':'Magnet ('+G.charges.magnet+')')+'<small>Heat +'+Math.round(HEAT.mag*heatGain())+' if it hits</small></button>'+
+  $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(locked()?'\u{1F512} ':'')+(G.armed==='magnet'?'Magnet: tap a number':G.magnet>=0&&G.wheel[G.magnet]?'Magnet: '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' \u2715':'Magnet ('+G.charges.magnet+')')+'<small>Heat +'+Math.round(HEAT.mag*heatGain())+' if it hits</small></button>'+
     '<button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(bet&&G.charges.ball>0?'':' disabled')+' title="Spin extra balls. Tap again to add more.">'+(locked()?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':'')+' this spin':'Extra Ball ('+G.charges.ball+')')+'<small>Heat +'+Math.round(HEAT.ball*heatGain())+' each</small></button>'+
     '<button disabled title="After the ball lands, move it to a nearby pocket.">'+(locked()?'\u{1F512} ':'')+'Nudge ('+G.charges.nudge+')<small>after the ball lands</small></button>'+
     '';
@@ -1929,7 +1931,13 @@ function render(){
 /* ---------- input ---------- */
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b||b.disabled)return;
-  if(b.dataset.bet){placeBet(b.dataset.bet);return;}
+  if(b.dataset.bet){
+    if(G.mode==='bet'&&G.armed==='magnet'){const k=b.dataset.bet;let idx=-1;
+      if(k[0]==='n'){const v=+k.slice(1);let bm=-1;G.wheel.forEach((p,i)=>{if(!p.void&&p.num===v){const m=(p.gold?2:1)+(G.watch.includes(i)?-0.5:0);if(m>bm){bm=m;idx=i;}}});}
+      else if(k==='void')idx=G.wheel.findIndex(p=>p.void);
+      if(idx>=0){pocketClick(idx);return;}
+      tip('Magnet: tap a single number on the table, or a pocket on the wheel.');sfx.bad();render();return;}
+    placeBet(b.dataset.bet);return;}
   if(b.dataset.chip){const c=b.dataset.chip;G.chip=isNaN(+c)?c:+c;render();return;}
   const a=b.dataset.act;if(!a)return;
   switch(a){
@@ -1956,7 +1964,7 @@ document.addEventListener('click',e=>{
     case'n0':nudge(0);break;
     case'actToggle':{const bx=$('activeBox');store.set('dmw_actc',bx&&bx.className.indexOf('collapsed')>=0?'0':'1');}renderActive();break;
     case'skTap':break;
-    case'magnet':if(G.magnet>=0){G.magnet=-1;G.armed=null;}else G.armed=G.armed==='magnet'?null:'magnet';if(G.armed)tip('Magnet: tap a pocket on the wheel.');render();break;
+    case'magnet':if(G.magnet>=0){G.magnet=-1;G.armed=null;}else G.armed=G.armed==='magnet'?null:'magnet';if(G.armed)tip('Magnet: tap a number on the table, or a pocket on the wheel.');render();break;
     case'ball':G.useBall=(G.useBall+1)%(Math.min(G.charges.ball,3)+1);render();break;
     case'relic':{const k='r'+b.dataset.i;if(G.shopSel!==k){G.shopSel=k;sfx.chip();render();}else{G.shopSel=null;buyRelic(+b.dataset.i);}}break;
     case'shopTab':G.shopTab=b.dataset.t;G.shopSel=null;G.armed=null;G.tr=null;render();break;
