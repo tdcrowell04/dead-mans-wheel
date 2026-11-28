@@ -869,7 +869,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v118',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v119',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1716,8 +1716,8 @@ function intro(){
   (SHEET_URL?'<p class="hint" style="margin-top:12px">Playtest build. Your name and how each run goes (bets, purchases, results) are sent to the developer to help balance the game. Nothing else is collected.</p>':'')+'</div>';
 }
 function pickStart(){
-  const sh=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]),opts=sh(Object.keys(CLASSES)).slice(0,3);
-  $('overlay').innerHTML='<div class="modal"><h3>Who pushes through the doors tonight?</h3><p class="hint">Pick who you are. Each one plays differently.</p><div class="shop">'+
+  const opts=['painter','sharp','bank','streak','gold','cheat','lucky','wreck'].filter(c=>CLASSES[c]);
+  $('overlay').innerHTML='<div class="modal"><h3>Who pushes through the doors tonight?</h3><p class="hint">Pick who you are. Each one plays differently, and every one is open each run.</p><div class="shop">'+
    opts.map(c=>{const C=CLASSES[c],r=RELICS.find(x=>x.id===C.relic);return '<button class="card clscard" data-act="start" data-cls="'+c+'"><b>'+C.n+'</b><i class="bld">'+BUILDS[c][1]+'</i><span class="clsp"><u>Passive ability</u>'+C.p+'</span><span class="clsk"><u>Starts with</u><em>'+r.name+':</em> '+bdesc(r)+' Also '+KITS[c][0]+'.</span></button>';}).join('')+'</div></div>';
 }
 
