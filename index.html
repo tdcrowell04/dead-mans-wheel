@@ -406,6 +406,14 @@ button.big{font-size:13px;padding:4px 10px}
 #stage{width:min(calc(100vh - 70px),calc(100dvh - 70px),40vw)}
 }
 .bld{display:block;font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);opacity:.85;margin:-1px 0 4px}
+.rcpt{margin-top:6px;border:1px solid var(--edge);border-radius:8px;padding:6px 9px;background:rgba(0,0,0,.28);font-size:12.5px;max-width:420px}
+.rcpt .rh{display:flex;justify-content:space-between;gap:10px;font-family:'Rye',serif;color:var(--accent);font-size:14px;border-bottom:1px solid var(--edge);padding-bottom:3px;margin-bottom:3px}
+.rcpt .rl{display:flex;justify-content:space-between;gap:10px;line-height:1.5}.rcpt .rl.rr span{color:var(--accent)}.rcpt .rl.rp span{color:#ffd76b}.rcpt b{font-weight:400}.rcpt .good{color:#8fe3a0}.rcpt .bad{color:#ff9a8a}
+.heatbar em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,120,60,.85) 0 4px,rgba(255,120,60,.3) 4px 8px)}
+.hz{display:grid;grid-template-columns:repeat(4,1fr);font-size:9.5px;opacity:.8;margin-top:2px;text-align:center}.hz b{font-weight:400}.hz b.on{color:#ffb36b;opacity:1}
+#powers button small{display:block;font-size:9.5px;opacity:.75;font-family:inherit}
+.stats small.goal{display:block;font-size:10.5px;opacity:1}.stats small.goal.good{color:#8fe3a0}.stats small.goal.bad{color:#ff9a8a}
+@media (max-width:600px) and (orientation:portrait){#face{display:none}#result{display:none}}
 </style>
 </head>
 <body>
@@ -419,7 +427,7 @@ button.big{font-size:13px;padding:4px 10px}
     <button data-act="mute" id="muteBtn" title="Sound" aria-label="Sound">&#x1F50A;</button>
     <button data-act="fullscr" id="fsBtn" title="Full screen" aria-label="Full screen">&#x2922;</button>
   </header>
-  <div id="dealer"><div id="face"></div><div id="say"></div><div id="result"></div><div id="eyeLine"></div><div id="heatBox"></div></div>
+  <div id="dealer"><div id="face"></div><div id="say"></div><div id="result"></div><div id="rcpt"></div><div id="eyeLine"></div><div id="heatBox"></div></div>
   <main>
     <section id="wheelSec">
       <div id="pop"></div>
@@ -460,7 +468,7 @@ const plab=p=>p.void?'◉':lab(p.num);
 const pct=x=>{const v=x*100;return (v>0&&v<10?v.toFixed(1):Math.round(v))+'%';};
 const mk=n=>({num:n,color:ZLAB[n]?'green':(RED.has(n)||(n>36&&n%2===1))?'red':'black',gold:false,goldHits:0,void:false});
 const mkVoid=()=>({num:-1,color:'void',gold:false,void:true});
-const TOLLS=[60,120,240,480,960,1920,3840,7680];
+const TOLLS=[60,100,160,250,390,600,920,1400];
 const GLYPHS=['⍟','◬','⌖','☍','⟁','ψ','∴','⌬'];
 const PLACES=['The Dusty Coin Saloon','The Dusty Coin Saloon','The Dusty Coin Saloon?','The Du ty C in Sal on','The D●sty C●in','The Coin','THE MOUTH','THE HOUSE'];
 const LINES=[
@@ -608,7 +616,7 @@ const cover=k=>{const n=G.wheel.length;if(!n)return 0;let c=0;G.wheel.forEach(p=
 const goldLife=()=>3+2*cnt('assay');
 const drinkCost=()=>Math.max(5,r5(TOLLS[G.night-1]*0.1*Math.pow(1.5,G.drinks||0)));
 function drink(){if(G.mode!=='bet'||G.heat<=0||(G.boss&&G.boss.phase>=2))return;const c=drinkCost();if(G.chips<c){sfx.bad();tip('A drink for Silas costs '+fmt(c)+' chips.');render();return;}G.chips-=c;G.drinks=(G.drinks||0)+1;const was=G.heat;G.heat=Math.max(0,G.heat-25);say('Silas takes the glass and looks somewhere else for a while. "Mighty kind."');tip('Heat '+was+' down to '+G.heat+'. The next drink tonight costs '+fmt(drinkCost())+'.');sfx.buy();render();}
-function fineSettle(q){const f=G.fine||0;if(!f)return;G.fine=0;const m=q==null?1:q==='perfect'?0:q==='clean'?0.5:2,pay=Math.min(G.chips,r5(f*m));G.chips-=pay;
+function fineSettle(q){const f=G.fine||0;if(!f)return;G.fine=0;const m=q==null?1:q==='perfect'?0:q==='clean'?0.5:2,pay=Math.min(G.chips,r5(f*m));G.chips-=pay;if(G.rcpt){G.rcpt.lines.push([q==null?'Fine paid':q==='perfect'?'Talked your way out':q==='clean'?'Half the fine':'Double the fine',-pay,'b']);G.rcpt.total-=pay;}
   G.res+=' '+(q==null?'Paid the fine: -'+fmt(pay)+'.':q==='perfect'?'You talked your way out. No fine.':q==='clean'?'Silas half buys it. Half the fine: -'+fmt(pay)+'.':'Silas does not buy a word of it. Double the fine: -'+fmt(pay)+'.');
   if(G.log&&G.log.spins.length)G.log.spins[G.log.spins.length-1].fine=pay;if(G.chips<=0&&G.mode==='bet')G.mode='closing';}
 function freeSync(){if(!G.shop)return;G.shop.tools.forEach(t=>{if(TOOLS[t.type].target&&!t.sold&&!(t.left>0)){if(t.full==null)t.full=t.price;t.price=G.freeLeft>0?0:t.full;}});}
@@ -657,7 +665,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v88',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v89',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -726,6 +734,11 @@ function payout(hits){
   }
   return{staked,back};
 }
+function receipt(hits,staked){const L=[],sr=G.relics,sh=G.heat;try{G.relics=[];G.heat=0;let prev=payout(hits).back;L.push(['Your bets',prev-staked]);const cur=[];
+  for(const id of [...new Set(sr)]){sr.forEach(x=>{if(x===id)cur.push(x);});G.relics=cur.slice();const b=payout(hits).back;if(b!==prev){const r=RELICS.find(x=>x.id===id);L.push([r?r.name:id,b-prev,'r']);prev=b;}}
+  G.relics=sr;G.heat=sh;const b=payout(hits).back;if(b!==prev)L.push(['Heat '+sh+' bonus',b-prev,'r']);}catch(e){}finally{G.relics=sr;G.heat=sh;}return L;}
+function rcptHTML(){const R=G.rcpt;if(!R||G.mode==='shop'||G.mode==='intro')return '';const row=x=>'<div class="rl'+(x[2]==='r'?' rr':x[2]==='b'?' rb':'')+'"><span>'+x[0]+'</span><b class="'+(x[1]>0?'good':x[1]<0?'bad':'')+'">'+(x[1]>0?'+':x[1]<0?'-':'')+fmt(Math.abs(x[1]))+'</b></div>';
+  return '<div class="rcpt"><div class="rh"><span>'+R.where+'</span><b class="'+(R.total>0?'good':R.total<0?'bad':'')+'">'+(R.total>0?'+':R.total<0?'-':'')+fmt(Math.abs(R.total))+'</b></div>'+(R.prize?'<div class="rl rp"><span>\u2605 Lucky Draw: you won '+R.prize+'</span></div>':'')+R.lines.map(row).join('')+'</div>';}
 function hitsFor(i){const n=G.wheel.length,h=[{i,w:1}];if(has('noneuclid'))h.push({i:(i+Math.floor(n/2))%n,w:0.5});return h;}
 function pinfo(p,i){
   const lk=G.lucky.includes(i)?' Starred: chips on Lucky Draw win an item if the ball lands here.':'';
@@ -792,8 +805,8 @@ function renderActive(){
   const box=$('activeBox');if(!box)return;
   const L=activeMods(),col=store.get('dmw_actc')==='1';
   box.className='box'+(col?' collapsed':'');
-  box.innerHTML='<button class="acthead" data-act="actToggle" aria-expanded="'+!col+'">Active <b>'+(L.length+G.relics.length?'('+L.length+')':'')+'</b><span class="chev">'+(col?'\u25B8':'\u25BE')+'</span></button>'+
-    '<div class="actlist">'+(L.length?L.map(x=>'<button class="am '+x.c+'" '+x.act+'>'+x.t+'</button>').join(''):'<span class="hint">Nothing in play right now.</span>')+
+  box.innerHTML='<button class="acthead" data-act="actToggle" aria-expanded="'+!col+'">Active <b>'+(L.length+G.relics.length?'('+(L.length+G.relics.length)+')':'')+'</b><span class="chev">'+(col?'\u25B8':'\u25BE')+'</span></button>'+
+    '<div class="actlist">'+(L.length?L.map(x=>'<button class="am '+x.c+'" '+x.act+'>'+x.t+'</button>').join(''):''+(G.relics.length?'':'<span class="hint">Nothing in play right now.</span>')+'')+
     (G.relics.length?'<span class="actsep">Relics</span>'+owned().map(e=>'<button class="am relic'+(e[0].cosmic?' cosmic':'')+'" data-act="items" data-hl="'+e[0].name.replace(/"/g,'&quot;')+'">'+e[0].name+(e[1]>1?' x'+e[1]:'')+'</button>').join(''):'')+'</div>';
 }
 const QUIPS={
@@ -839,7 +852,7 @@ function moveEye(center){
   if(center==null||center<0||center>=n)center=Math.floor(Math.random()*n);
   const start=((center-Math.floor(c/2))%n+n)%n;G.watch=Array.from({length:c},(_,j)=>(start+j)%n);
 }
-function moveLucky(){const n=G.wheel.length;if(n<6){G.lucky=[];return;}const c=Math.min(n-1,Math.max(3,Math.round(n*0.25))+cnt('rabbit')),st=Math.floor(Math.random()*n);G.lucky=Array.from({length:c},(_,j)=>(st+j)%n);}
+function moveLucky(){const n=G.wheel.length;if(n<6){G.lucky=[];return;}const c=Math.min(n-1,Math.max(3,Math.round(n*0.25))+cnt('rabbit')),st=Math.floor(Math.random()*n);G.lucky=Array.from({length:c},(_,j)=>(st+j)%n).filter(i=>!(G.watch||[]).includes(i));}
 const luckSteps=()=>{const t=TOLLS[G.night-1];return[Math.max(5,r5(t*0.05)),r5(t*0.25),r5(t*0.6)];};
 const luckTier=st=>{const s=luckSteps();return st>=s[2]?3:st>=s[1]?2:st>=s[0]?1:0;};
 const TIERN=['','a trick','a relic','a rare relic and a trick'];
@@ -964,7 +977,7 @@ function grow(){
 }
 function hungerEat(){let t='';for(let h=0;h<cnt('hunger');h++){const c=G.wheel.map((p,i)=>p.void?-1:i).filter(i=>i>=0);if(c.length>1&&G.wheel.length>8){const i=c[Math.floor(Math.random()*c.length)];const gone=G.wheel.splice(i,1)[0];G.hunger++;t+=' The Hunger ate '+pname(gone)+'.';}}return t;}
 function startNight(){
-  G.spins=5+cnt('watch');G.fsHold=false;G.pardonUsed=false;G.drinks=0;G.windUsed=0;G.snakeUsed=0;G.barrelUsed=0;G.skRetry=0;G.tabAdd=0;G.bets={};G.balls=[];G.hits=[];G.magnet=-1;G.useBall=0;G.armed=null;
+  G.spins=5+cnt('watch');G.rcpt=null;G.fsHold=false;G.pardonUsed=false;G.drinks=0;G.windUsed=0;G.snakeUsed=0;G.barrelUsed=0;G.skRetry=0;G.tabAdd=0;G.bets={};G.balls=[];G.hits=[];G.magnet=-1;G.useBall=0;G.armed=null;
   for(const k of ['nudge','magnet','ball'])G.charges[k]+=perNight(k);
   let extra=grow();
   extra+=hungerEat();
@@ -1044,14 +1057,14 @@ function sleight(kind,done){
   const o=$('overlay');
   o.innerHTML='<div class="modal sleight"><h3>'+title+'</h3><p class="hint">Tap when the needle is in the green. Gold is perfect.</p>'+
     '<div class="skbar"><div class="skz" style="left:'+(z0*100)+'%;width:'+(zw*100)+'%"><div class="skp"></div></div><div class="skn" id="skn"></div></div>'+
-    '<div class="skres" id="skres">&nbsp;</div><button class="big" data-act="skTap" id="skBtn">Now</button></div>';
+    '<div class="skres" id="skres">'+(kind==='talk'?'Gold: no fine \u00B7 Green: half \u00B7 Miss: double':'Gold: no Heat \u00B7 Green: half the Heat \u00B7 Miss: '+(has('sleeve')?'normal Heat':'50% more Heat'))+'</div><button class="big" data-act="skTap" id="skBtn">Ready</button></div>';
   o.className='show';
-  SK={t0:performance.now(),speed,z0,zw,done,kind,over:false};
+  SK={t0:0,speed,z0,zw,done,kind,over:false,go:false};
   const ease=G.night>=4,pos=t=>{let x=(t*SK.speed)%2;x=x<1?x:2-x;return ease?(1-Math.cos(Math.PI*x))/2:x;};
   const tick=now=>{if(!SK||SK.over)return;const el=$('skn');SK.shown=pos((now-SK.t0)/1000);if(el)el.style.left=(SK.shown*100)+'%';
     if(now-SK.t0>4500){skFinish(true);return;}SK.raf=requestAnimationFrame(tick);};
-  SK.pos=pos;SK.raf=requestAnimationFrame(tick);
-  {const bt=$('skBtn');if(bt)bt.addEventListener('pointerdown',e=>{e.preventDefault();skFinish();});}
+  SK.pos=pos;
+  {const bt=$('skBtn');if(bt)bt.addEventListener('pointerdown',e=>{e.preventDefault();if(!SK||SK.over)return;if(!SK.go){SK.go=true;SK.t0=performance.now();bt.textContent='Now';SK.raf=requestAnimationFrame(tick);return;}skFinish();});}
 }
 function skFinish(timeout){
   if(!SK||SK.over)return;SK.over=true;cancelAnimationFrame(SK.raf);
@@ -1137,11 +1150,11 @@ function resolve(){
   G.hits=hits.map(h=>h.i);
   let {staked,back}=payout(hits);
   let net=back-staked;const notes=[],dlg=[],dlgS=[];let title='',income=0;
-  if(net>0){try{const sr=G.relics,sh=G.heat;G.relics=[];G.heat=0;const b0=payout(hits).back;G.relics=sr;G.heat=sh;if(back-b0>0)notes.push('Your relics'+(heatTier()?' and Heat':'')+' added +'+fmt(back-b0)+' of that.');}catch(e){}}
+  const rc=receipt(hits,staked);
   if(has('closecall')){const nW=G.wheel.length;for(const [k,stv] of Object.entries(G.bets)){if(k[0]!=='n')continue;const v=+k.slice(1);if(G.balls.some(b=>!G.wheel[b.idx].void&&G.wheel[b.idx].num===v))continue;
-    if(G.balls.some(b=>[1,nW-1].some(d=>{const q=G.wheel[(b.idx+d)%nW];return q&&!q.void&&q.num===v;}))){back+=stv;net+=stv;notes.push('Close Call: the ball stopped next to '+lab(v)+'. Stake back (+'+fmt(stv)+').');}}}
+    if(G.balls.some(b=>[1,nW-1].some(d=>{const q=G.wheel[(b.idx+d)%nW];return q&&!q.void&&q.num===v;}))){back+=stv;net+=stv;rc.push(['Close Call',stv,'r']);notes.push('Close Call: the ball stopped next to '+lab(v)+'. Stake back (+'+fmt(stv)+').');}}}
   if(has('notch')&&G.balls.some(b=>!G.watch.includes(b.idx)&&Object.keys(G.bets).some(k=>k[0]==='n'&&hitOdds(k,G.wheel[b.idx])>0&&matches(k,G.wheel[b.idx])))&&(G.notch||0)<10){G.notch=(G.notch||0)+1;notes.push('Notched Bullet: straight bets now pay +'+10*cnt('notch')*G.notch+'%.');}
-  if(has('partner')){const g=Math.max(5,r5(TOLLS[G.night-1]*0.05))*cnt('partner');income+=g;notes.push('Silent Partner: +'+fmt(g)+'.');}
+  if(has('partner')){const g=Math.max(5,r5(TOLLS[G.night-1]*0.05))*cnt('partner');income+=g;rc.push(['Silent Partner',g,'r']);notes.push('Silent Partner: +'+fmt(g)+'.');}
   const sp=G.spinInfo||{};let tampered=false,eyed=false;
   G.balls.forEach(b=>{const p=G.wheel[b.idx],seen=G.watch.includes(b.idx);
     if(seen){eyed=true;notes.push('The Eye was watching '+(p.void?'that pocket':lab(p.num))+'. It paid nothing.');}
@@ -1149,11 +1162,11 @@ function resolve(){
     else{if(p.color==='green'&&has('preacher')&&!seen)notes.push("Preacher's Coin made the zero pay every bet "+cnt('preacher')+' to 1.');
       if(p.copy)tampered=true;
       if(p.gold){tampered=true;if(!seen)notes.push('Gold pocket: wins there paid x'+(2+cnt('tooth'))+'.');p.goldHits=(p.goldHits||0)+1;
-        if(has('pan')){const g=r5(TOLLS[G.night-1]*0.1)*cnt('pan');income+=g;notes.push("Prospector's Pan: +"+fmt(g)+' chips from the gold.');}
+        if(has('pan')){const g=r5(TOLLS[G.night-1]*0.1)*cnt('pan');income+=g;rc.push(["Prospector's Pan",g,'r']);notes.push("Prospector's Pan: +"+fmt(g)+' chips from the gold.');}
         if(p.goldHits>=goldLife()){p.gold=false;p.goldHits=0;notes.push('The last of the gold flaked off '+lab(p.num)+'.');}else notes.push('The gold is wearing thin: '+(goldLife()-p.goldHits)+' more hit'+(goldLife()-p.goldHits===1?'':'s')+'.');}}
     if(has('noneuclid'))notes.push('Non-Euclidean Wheel also scored '+pname(G.wheel[(b.idx+Math.floor(n/2))%n])+' at half pay.');});
-  if(net>0&&(G.barrelUsed||0)<cnt('barrel')){G.barrelUsed=(G.barrelUsed||0)+1;back+=net;notes.push('Double Barrel: this win paid double (+'+fmt(net)+').');net*=2;}
-  if(net<0&&G.snakeUsed<cnt('snake')){G.snakeUsed++;const r=Math.round(-net/2);back+=r;net+=r;notes.push('Snake Oil gave back '+fmt(r)+'.');}
+  if(net>0&&(G.barrelUsed||0)<cnt('barrel')){G.barrelUsed=(G.barrelUsed||0)+1;back+=net;rc.push(['Double Barrel',net,'r']);notes.push('Double Barrel: this win paid double (+'+fmt(net)+').');net*=2;}
+  if(net<0&&G.snakeUsed<cnt('snake')){G.snakeUsed++;const r=Math.round(-net/2);back+=r;net+=r;rc.push(['Snake Oil',r,'r']);notes.push('Snake Oil gave back '+fmt(r)+'.');}
   let caught=null;
   if(heatOn()){
     const tab=TOLLS[G.night-1],was=G.heat;
@@ -1184,7 +1197,7 @@ function resolve(){
       {const jb=cnt('jailbird');if(jb&&G.night<8){G.jailNight=G.night+1;G.jailPctV=Math.min(75,25*jb);dlg.push('Jailbird: tomorrow\'s tab is '+G.jailPctV+'% lower.');}}}
     if(G.heat>=100){
       G.taught=G.taught||{};G.taught.heat=true;
-      const took=Math.max(0,net);if(took>0){back-=took;net=0;}
+      const took=Math.max(0,net);if(took>0){back-=took;net=0;rc.push(['Caught: Silas takes the winnings',-took,'b']);}
       const jb=cnt('jailbird'),fine=has('tinstar')?0:r5(TOLLS[G.night-1]*0.25),cut=0;
       const lost=fine?'He wants a <b>fine of '+fmt(fine)+' chips</b> on top. Pay it, or try to talk your way out of it.':'Your Tin Star gets you off with no fine.';
       caught={took,cut:0,lost:'fine',fine};G.fine=fine;
@@ -1199,14 +1212,15 @@ function resolve(){
   }
   let prize=null;const ls=G.bets.luck||0;
   if(ls>0){const hitL=!bossRule('stars')&&G.balls.some(b=>G.lucky.includes(b.idx)&&!G.watch.includes(b.idx)),tier=luckTier(ls);
-    if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;notes.push('Lucky Draw hit: you got '+prize.name+'.');if(has('clover')){const g=ls*3*cnt('clover');income+=g;notes.push('Four-Leaf Clover: +'+fmt(g)+' chips.');}if(!title)title='Lucky Draw';dlg.push('The ball landed on a starred pocket.','You win '+prize.html.replace('class="term"','class="term on"')+'.','<span class="tinfo">'+prize.desc+'</span>',tier===3?'<i class="hint">Tap a name to see what it does.</i>':'');}
+    if(hitL&&tier>0){prize=grantItem(tier);prize.tier=tier;if(has('clover')){const g=ls*3*cnt('clover');income+=g;rc.push(['Four-Leaf Clover',g,'r']);notes.push('Four-Leaf Clover: +'+fmt(g)+' chips.');}if(!title)title='Lucky Draw';dlg.push('The ball landed on a starred pocket.','You win '+prize.html.replace('class="term"','class="term on"')+'.','<span class="tinfo">'+prize.desc+'</span>',tier===3?'<i class="hint">Tap a name to see what it does.</i>':'');}
     else if(hitL)notes.push('The ball found a lucky pocket, but your Lucky Draw stake was under the first threshold.');
-    else{notes.push('Lucky Draw missed.');if(has('wishbone')){const g=Math.round(ls/2);income+=g;notes.push('Wishbone: +'+fmt(g)+' back.');}}}
+    else{notes.push('Lucky Draw missed.');if(has('wishbone')){const g=Math.round(ls/2);income+=g;rc.push(['Wishbone',g,'r']);notes.push('Wishbone: +'+fmt(g)+' back.');}}}
   G.cold=false;const curses=[];
   let shielded=false;if(G.night>=3)G.balls.forEach(b=>{const p=G.wheel[b.idx];if(p&&!p.void&&p.color==='green'){if(has('preacher'))shielded=true;else curses.push(1);}});
   if(G.log)G.log.spins.push({n:G.night,bets:{...G.bets},land:G.balls.map(b=>plab(G.wheel[b.idx])+(G.wheel[b.idx].gold?'g':'')),net,chips:G.chips+back,mult:Math.round(mult({gold:false})*100)/100,magnet:!!sp.magnet,balls:G.balls.length,nudged:!!sp.nudged,zeros:curses.length,heat:G.heat,eyed,lucky:prize?prize.name:undefined,caught:caught?caught.lost:undefined});
   const gross=caught?net+caught.took+caught.cut:net;
   G.spinInfo=null;
+  {const hd=G.heat-(typeof wasH==='number'?wasH:G.heat);G.rcpt={where:G.balls.map(b=>pname(G.wheel[b.idx])).join(' and ').replace(/^./,c=>c.toUpperCase()),lines:rc,total:net+income,prize:prize?prize.name:''};if(ls>0&&rc.length){rc[0][1]+=ls;rc.splice(1,0,['Lucky Draw ticket',-ls]);}}
   G.chips+=back+income;G.bets={};
   if(net>0){G.streak++;G.lstreak=0;sfx.win();}else{if(net<0&&G.streak>0&&(G.windUsed||0)<cnt('wind')){G.windUsed=(G.windUsed||0)+1;notes.push('Second Wind: your streak of '+G.streak+' holds.');}else G.streak=0;if(net<0)G.lstreak=(G.lstreak||0)+1;sfx.lose();}
   let where=G.balls.map(b=>pname(G.wheel[b.idx])).join(' and ');
@@ -1220,7 +1234,7 @@ function resolve(){
   let bst=null;if(G.boss){bst=bossCheck(net);if(bst!=='dead'){if(G.boss.armored)notes.push('The House\'s hide held: it can only lose '+fmt(r5(G.boss.max*0.4))+' in one spin.');if(G.boss.phase===3&&bst!==3&&G.spins>0){const g=Math.min(G.boss.max-G.boss.hp,r5(G.boss.max*0.05));if(g>0){G.boss.hp+=g;notes.push('The House regrows '+fmt(g)+'.');}}bossRules();notes.push('The House: '+fmt(G.boss.hp)+' health left.');
       if(bst){title=bst===2?'The House wakes':'The House is desperate';dlg.push(bst===2?'The House is down to two thirds. The walls lean in.':'The House is down to one third. It stops pretending to be a saloon.',bst===2?'From now on, Heat never cools.':'From now on it plays two rules every spin, and it regrows a twentieth of its health after every spin.','You get 2 more spins.');}}}
   moveEye(net>0&&!changed?landed:null);moveLucky();
-  const head=caught?(caught.took>0?'Won '+fmt(caught.took)+', but Silas caught you. Winnings gone.':'Silas caught you.'):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.';
+  const head=(prize?'Lucky Draw hit: you won '+prize.name+'. ':'')+(caught?(caught.took>0?'Won '+fmt(caught.took)+', but Silas caught you. Winnings gone.':'Silas caught you.'):net>0?'Won '+fmt(net)+'.':net===0?'Even.':'Lost '+fmt(-net)+'.');
   where=where.charAt(0).toUpperCase()+where.slice(1);
   G.res=where+'. '+head+(notes.length?' '+[...new Set(notes)].join(' '):'');
   G.tip='';
@@ -1535,7 +1549,7 @@ function tentacles(){
   }
   const box=$('tentBox');if(box&&box.style){box.style.left=r.left+'px';box.style.top=r.top+'px';box.style.width=r.width+'px';box.style.height=r.height+'px';}
 }
-function nudgeBtns(){return '<button class="big" data-act="nudgeArm">'+(G.armed==='nudge'?'Tap a glowing pocket (or tap here to cancel)':'Nudge the ball ('+G.charges.nudge+' left)')+'</button><button data-act="n0">Leave it</button>';}
+function nudgeBtns(){return '<button class="big" data-act="nudgeArm">'+(G.armed==='nudge'?'Tap a glowing pocket (or tap here to cancel)':'Nudge the ball ('+G.charges.nudge+' left) \u00B7 Heat +'+Math.round(HEAT.nudge*heatGain()))+'</button><button data-act="n0">Leave it</button>';}
 function showWheel(){try{$('wheel').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}}
 function renderLower(){
   const L=$('lower');
@@ -1566,7 +1580,7 @@ function renderLower(){
     h+='<button class="big spinb'+(heatOn()&&G.heat+proj>=100?' danger':'')+'" data-act="spin">Spin<span class="tag">Bet '+fmt(totalBets())+'</span>'+(proj>0?'<span class="tag up">Heat +'+proj+'</span>':cool?'<span class="tag cool">Heat -'+HEAT.cool+'</span>':'')+(heatTier()?'<span class="tag cool">Wins +'+10*heatTier()+'%</span>':'')+(mg?'<span class="tag up">Magnet +'+HEAT.mag+' if it hits</span>':'')+'</button>';}
     if(G.fs){const lk=locked();h+='<button data-act="magnet" class="'+(G.magnet>=0?'on':'')+'"'+(G.charges.magnet>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.magnet>=0&&G.wheel[G.magnet]?'Magnet on '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num)):'Magnet ('+G.charges.magnet+')')+'</button><button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(G.charges.ball>0&&!lk?'':' disabled')+'>'+(lk?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':''):'Extra Ball ('+G.charges.ball+')')+'</button>';}
     if(G.heat>=10&&!(G.boss&&G.boss.phase>=2)){const dc=drinkCost();h+='<button data-act="drink" class="payok"'+(G.chips>=dc?'':' disabled')+'><span>Buy Silas a drink</span> <span class="bon">('+fmt(dc)+' chips, Heat -25)</span></button>';}
-    if(G.night<7&&G.chips+totalBets()>=toll()){const sh=leaveShort();h+='<button data-act="settle" class="payok'+(sh?' short':'')+'"><span>'+(sh&&G.leaveWarn?'Leave anyway':'Pay '+fmt(toll())+' and leave')+'</span> <span class="bon">'+(sh?'(short for night '+(G.night+1)+': '+fmt(sh.after)+' vs '+fmt(sh.next)+')':'(+'+fmt(Math.min(G.spins,5)*r5(toll()*0.1))+' bonus'+(has('bounty')&&G.spins>0?', +'+pls(cnt('bounty'),'trick'):'')+')')+'</span></button>';}
+    if(G.night<7&&G.chips+totalBets()>=toll()&&G.spins<5+cnt('watch')){const sh=leaveShort();h+='<button data-act="settle" class="payok'+(sh?' short':'')+'"><span>'+(sh&&G.leaveWarn?'Leave anyway':'Pay '+fmt(toll())+' and leave')+'</span> <span class="bon">'+(sh?'(short for night '+(G.night+1)+': '+fmt(sh.after)+' vs '+fmt(sh.next)+')':'(+'+fmt(Math.min(G.spins,5)*r5(toll()*0.1))+' bonus'+(has('bounty')&&G.spins>0?', +'+pls(cnt('bounty'),'trick'):'')+')')+'</span></button>';}
   }else if(G.mode==='nudge'){
     h+='<span class="nudgeb">'+nudgeBtns()+'</span><span class="hint">Nudge moves a ball to a nearby pocket. The numbers on the wheel show what each pocket is worth.</span>';
   }else if(G.mode==='closing'){
@@ -1588,18 +1602,18 @@ function render(){
   try{renderScene();}catch(e){}
   $('place').textContent=PLACES[G.night-1];
   $('nightLbl').textContent='Night '+G.night+' of 8';
-  $('say').textContent=G.msg;$('result').textContent=G.res;
+  $('say').textContent=G.msg;$('result').textContent=G.res;{const rb=$('rcpt');if(rb)rb.innerHTML=rcptHTML();}
   if(G.faceStage!==G.night){G.faceStage=G.night;$('face').innerHTML=dealerSVG(G.night);}
-  {const sh=G.mode==='shop'&&G.night<8;$('stats').innerHTML='<div><b>'+fmt(G.chips)+'</b><small>Chips</small></div><div><b>'+fmt(sh?nextTab():toll())+'</b><small>'+(sh?(G.night===7?'House health':'Next tab'):G.boss?'House health':'Tab due')+'</small></div><div><b>'+(sh?5+cnt('watch'):G.spins)+'</b><small>'+(sh?'Spins next':'Spins left')+'</small></div><div><b>'+G.wheel.length+'</b><small>Pockets</small></div>';}
+  {const sh=G.mode==='shop'&&G.night<8;$('stats').innerHTML='<div><b>'+fmt(G.chips)+'</b><small>Chips</small></div><div><b>'+fmt(sh?nextTab():toll())+'</b><small>'+(sh?(G.night===7?'House health':'Next tab'):G.boss?'House health':'Tab due')+'</small>'+(!sh&&!G.boss&&G.mode!=='intro'?(()=>{const d=G.chips+totalBets()-toll();return '<small class="goal '+(d>=0?'good':'bad')+'">'+(d>=0?'covered, +'+fmt(d)+' spare':'need '+fmt(-d)+' more')+'</small>';})():'')+'</div><div><b>'+(sh?5+cnt('watch'):G.spins)+'</b><small>'+(sh?'Spins next':'Spins left')+'</small></div><div><b>'+G.wheel.length+'</b><small>Pockets</small></div>';}
   renderActive();
   const bet=G.mode==='bet'&&!locked();
   $('eyeLine').innerHTML=(G.watch.length&&G.mode!=='shop'?'<button class="tapbox eyebtn" data-act="sheet" data-t="eye">👁 <b>'+watchNames().join(', ')+'</b> pay nothing<span class="qi">?</span></button>':'');
-  $('heatBox').innerHTML=heatOn()?'<button class="tapbox" data-act="sheet" data-t="heat"><span class="heatlbl" style="display:block">Heat <b>'+G.heat+'</b> / 100'+(heatTier()?' · wins +'+10*heatTier()+'%':'')+(locked()?' · tricks locked':'')+'<span class="qi">?</span></span><span class="heatbar" style="display:block"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:25%"></u><u style="left:50%"></u><u style="left:75%"></u></span></button>':'';
-  $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(locked()?'\u{1F512} ':'')+(G.armed==='magnet'?'Magnet: now tap a pocket':G.magnet>=0&&G.wheel[G.magnet]?'Magnet: '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' \u2715':'Magnet ('+G.charges.magnet+')')+'</button>'+
-    '<button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(bet&&G.charges.ball>0?'':' disabled')+' title="Spin extra balls. Tap again to add more.">'+(locked()?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':'')+' this spin':'Extra Ball ('+G.charges.ball+')')+'</button>'+
-    '<button disabled title="After the ball lands you may move it one pocket.">'+(locked()?'\u{1F512} ':'')+'Nudge ('+G.charges.nudge+')</button>'+
+  $('heatBox').innerHTML=heatOn()?'<button class="tapbox" data-act="sheet" data-t="heat"><span class="heatlbl" style="display:block">Heat <b>'+G.heat+'</b> / 100'+(heatTier()?' · wins +'+10*heatTier()+'%':'')+(locked()?' · tricks locked':'')+'<span class="qi">?</span></span><span class="heatbar" style="display:block"><i style="width:'+Math.min(100,G.heat)+'%"></i><u style="left:25%"></u><u style="left:50%"></u><u style="left:75%"></u>'+(()=>{const pj=G.mode==='bet'?Math.round(heatPlan()*heatGain()+(G.magnet>=0?HEAT.mag*heatGain():0)):0;return pj>0?'<em style="left:'+Math.min(100,G.heat)+'%;width:'+Math.min(100-Math.min(100,G.heat),pj)+'%"></em>':'';})()+'</span><span class="hz"><b'+(G.heat<25?' class="on"':'')+'>Calm</b><b'+(G.heat>=25&&G.heat<50?' class="on"':'')+'>Wins +10%</b><b'+(G.heat>=50&&G.heat<75?' class="on"':'')+'>Wins +20%</b><b'+(G.heat>=75?' class="on"':'')+'>+30%, locked</b></span></button>':'';
+  $('powers').innerHTML=G.mode==='nudge'?nudgeBtns():'<button data-act="magnet" class="'+(G.armed==='magnet'||G.magnet>=0?'on':'')+'"'+(bet&&G.charges.magnet>0?'':' disabled')+' title="Pick a pocket. It is much more likely this spin.">'+(locked()?'\u{1F512} ':'')+(G.armed==='magnet'?'Magnet: now tap a pocket':G.magnet>=0&&G.wheel[G.magnet]?'Magnet: '+(G.wheel[G.magnet].void?'Void':lab(G.wheel[G.magnet].num))+' \u2715':'Magnet ('+G.charges.magnet+')')+'<small>Heat +'+Math.round(HEAT.mag*heatGain())+' if it hits</small></button>'+
+    '<button data-act="ball" class="'+(G.useBall?'on':'')+'"'+(bet&&G.charges.ball>0?'':' disabled')+' title="Spin extra balls. Tap again to add more.">'+(locked()?'\u{1F512} ':'')+(G.useBall?'+'+G.useBall+' ball'+(G.useBall>1?'s':'')+' this spin':'Extra Ball ('+G.charges.ball+')')+'<small>Heat +'+Math.round(HEAT.ball*heatGain())+' each</small></button>'+
+    '<button disabled title="After the ball lands you may move it one pocket.">'+(locked()?'\u{1F512} ':'')+'Nudge ('+G.charges.nudge+')<small>after the ball lands</small></button>'+
     '';
-  {const m=mult({gold:false});$('modBtn').textContent='Rules'+(m===1?'':' \u00B7 wins x'+m.toFixed(2))+(has('streak')?' \u00B7 streak '+G.streak:'');$('modBtn').className=m===1?'':'hotm';}
+  {const m=mult({gold:false});$('modBtn').textContent='Rules';$('modBtn').className=m===1?'':'hotm';}
   $('fastBtn').className=G.fast?'on':'';$('fastBtn').title='Fast spins: '+(G.fast?'on':'off');
   {const fb=$('fsBtn');if(fb){fb.style.display=STANDALONE()||!matchMedia('(pointer:coarse)').matches&&!FS_OK()?'none':'';fb.textContent=isFull()?'\u2921':'\u2922';fb.title=isFull()?'Leave full screen':'Full screen';}}
   $('muteBtn').textContent=muted?'\u{1F507}':'\u{1F50A}';$('muteBtn').title='Sound: '+(muted?'off':'on');
