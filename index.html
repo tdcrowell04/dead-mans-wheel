@@ -428,6 +428,9 @@ details.rcpt summary{list-style:none;cursor:pointer}details.rcpt summary::-webki
 .shop{align-items:start}
 @media (max-width:600px){html,body{overflow-x:hidden}#lower{max-width:100%}.felt{max-width:100%;overflow-x:hidden}}
 @media (min-width:1100px) and (min-height:521px){#app{max-width:1360px;display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:0 16px;align-items:start}header{grid-column:1/-1}main{display:contents}#wheelSec{grid-column:1;grid-row:2}#dealer{grid-column:2;grid-row:2;margin:0 0 10px}main>section:last-child{grid-column:2;grid-row:3;display:block}main>section:last-child .box{margin:0 0 10px}#lower{grid-column:1;grid-row:3/span 2}#stage{height:clamp(280px,40vh,400px)}#stage #wheelPane{flex:0 0 clamp(280px,40vh,400px);width:clamp(280px,40vh,400px)}#pop{width:clamp(280px,40vh,400px)}.rcpt{max-width:none}}
+.tipline.tfix{height:54px;overflow:hidden;display:flex;align-items:center;line-height:1.25}.tipline.tfix span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media (min-width:900px){.tipline.tfix{height:40px}.tipline.tfix span{-webkit-line-clamp:2}}
+body:not(.fs) .outs>.spot{min-height:82px}body:not(.fs) .luckwrap .spot{min-height:98px}
 </style>
 </head>
 <body>
@@ -693,7 +696,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v97',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v98',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1094,7 +1097,7 @@ function placeBet(k,force){
   amt=Math.min(amt,G.chips);if(amt<=0){sfx.bad();return;}
   G.chips-=amt;G.bets[k]=(G.bets[k]||0)+amt;sfx.chip();
   if(k==='luck'){const t=luckTier(G.bets.luck);tip(t?'Lucky Draw: a star wins '+TIERN[t]+'.':'Lucky Draw: not enough for a prize yet. Tap again to add more.');}
-  if(!numsOf(k)&&k!=='luck'){const rt=Math.round(chance(k)*(baseOdds(k)*mult({gold:false})+1)*100);tip(betName(k)+': wins '+pct(chance(k))+' of the time on this wheel. On average you get back '+rt+' chips for every 100 you bet here'+(rt>=100?', so the odds are on your side.':'.'));}
+  if(!numsOf(k)&&k!=='luck'){const rt=Math.round(chance(k)*(baseOdds(k)*mult({gold:false})+1)*100);{const e=rt-100;tip(betName(k)+': wins '+pct(chance(k))+' of the time. '+(e>1?'The odds favor you by '+e+'%.':e<-1?'The odds favor the house by '+(-e)+'%.':'An even bet.'));}}
   if(numsOf(k))tip((k[0]==='s'?'Split on ':k[0]==='c'?'Corner on ':'Straight on ')+numsOf(k).map(lab).join(', ')+'. Pays '+baseOdds(k)+' to 1 with a '+pct(chance(k))+' chance on this wheel.');
   render();
 }
@@ -1570,7 +1573,7 @@ function boardHTML(){
 }
 function spot(k,label,cls,style){
   const st=G.bets[k],dead=deadBet(k);
-  return '<button class="spot '+(cls||'')+(st?' bet':'')+'" data-bet="'+k+'"'+(style?' style="'+style+'"':'')+(dead||G.mode!=='bet'?' disabled':'')+'><span class="l">'+label+'</span><small><span class="od">'+oddsTxt(k)+' · </span>'+pct(chance(k))+'</small>'+(dead?'':(()=>{const rt=Math.round(chance(k)*(baseOdds(k)*mult({gold:false})+1)*100);return '<small class="rt '+(rt>=100?'good':rt<85?'bad':'')+'" title="Average chips back for every 100 bet here">'+rt+'% back</small>';})())+(st?'<span class="stake">'+fmt(st)+'</span>':'')+spotOutcome(k,st)+'</button>';
+  return '<button class="spot '+(cls||'')+(st?' bet':'')+'" data-bet="'+k+'"'+(style?' style="'+style+'"':'')+(dead||G.mode!=='bet'?' disabled':'')+'><span class="l">'+label+'</span><small><span class="od">'+oddsTxt(k)+' · </span>'+pct(chance(k))+'</small>'+(dead?'':(()=>{const rt=Math.round(chance(k)*(baseOdds(k)*mult({gold:false})+1)*100);const e=rt-100;return '<small class="rt '+(e>1?'good':e<-1?'bad':'')+'" title="Who the odds favor on this bet, on your wheel right now">'+(e>1?'your edge +'+e+'%':e<-1?'house edge '+(-e)+'%':'even bet')+'</small>';})())+(st?'<span class="stake">'+fmt(st)+'</span>':'')+spotOutcome(k,st)+'</button>';
 }
 function luckSpot(){
   const st=G.bets.luck||0,s=luckSteps(),t=luckTier(st);
@@ -1655,10 +1658,9 @@ function renderLower(){
   if(G.mode==='intro'||G.mode==='over'){L.innerHTML='';return;}
   const chips=[5,25,100,500,'half','all','custom'];
   const inFs=!!(G.fs&&G.mode==='bet'&&!G.fsHold&&G.armed===null);
-  let h='<div class="felt'+(G.remove?' removing':'')+(G.night===8?' mouth':'')+'">'+(G.boss?'<div class="bossbar"><div class="bfill" style="width:'+(100*G.boss.hp/G.boss.max).toFixed(1)+'%"></div><span>THE HOUSE · '+fmt(G.boss.hp)+' / '+fmt(G.boss.max)+' · phase '+G.boss.phase+'</span></div><div class="brules">'+G.boss.rules.map(r=>'<b>'+BRULES[r].n+':</b> '+BRULES[r].d).join('<br>')+'</div>':'')+'<div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div>'+(G.tip&&G.mode!=='shop'?'<div class="tipline">'+G.tip+'</div>':'')+'<div class="betbar"><div class="chips">'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c==='custom'?'Custom':c)+'</button>').join('')+
+  let h='<div class="felt'+(G.remove?' removing':'')+(G.night===8?' mouth':'')+'">'+(G.boss?'<div class="bossbar"><div class="bfill" style="width:'+(100*G.boss.hp/G.boss.max).toFixed(1)+'%"></div><span>THE HOUSE · '+fmt(G.boss.hp)+' / '+fmt(G.boss.max)+' · phase '+G.boss.phase+'</span></div><div class="brules">'+G.boss.rules.map(r=>'<b>'+BRULES[r].n+':</b> '+BRULES[r].d).join('<br>')+'</div>':'')+'<div class="fsinfo"><b>'+fmt(G.chips)+'</b> chips · tab <b>'+fmt(toll())+'</b> · <b>'+G.spins+'</b> spin'+(G.spins===1?'':'s')+' left'+(heatOn()?' · Heat <b>'+G.heat+'</b>/100':'')+(G.watch.length?' · 👁 on <b>'+watchNames().join(', ')+'</b>':'')+(G.res?'<span>'+G.res+'</span>':'')+'</div>'+'<div class="tipline tfix"><span>'+(G.tip||(G.mode==='bet'&&G.night===1&&!store.get('dmw_coach')?'Tap a number or color to bet the selected chip. The dots between numbers bet on 2 or 4 at once.':G.mode==='bet'?'Tap a box to bet. Tap a pocket on the wheel to see what it does.':'&nbsp;'))+'</span></div><div class="betbar"><div class="chips">'+chips.map(c=>'<button data-chip="'+c+'" class="'+(G.chip===c?'on':'')+'">'+(c==='half'?'Half':c==='all'?'All in':c==='custom'?'Custom':c)+'</button>').join('')+
     '</div><div class="tools"><button data-act="fs" class="'+(inFs?'on':'')+'" title="Full screen table"><span class="tl">'+(inFs?'Normal view':'Full screen')+'</span><span class="ti">'+(inFs?'\u2715':'\u26F6')+'</span></button><button data-act="remove" class="'+(G.remove?'rm':'')+'"'+(G.mode==='bet'&&totalBets()>0?'':' disabled')+'>'+(G.remove?'Removing':'Remove')+'</button><button data-act="rebet"'+(G.last&&G.mode==='bet'?'':' disabled')+'>Rebet</button><button data-act="clear"'+(G.mode==='bet'?'':' disabled')+'>Clear</button><button data-act="help" title="How to bet" class="qbtn">?</button></div></div>';
   {const N=G.N,hf=Math.floor(N/2),t=N/3;
-  if(G.mode==='bet'&&G.night===1&&!store.get('dmw_coach'))h+='<div class="coach">Tap a number or color to bet the selected chip. The dots between numbers bet on 2 or 4 at once. Tap the wheel to see what a pocket does.</div>';
   h+=boardHTML()+'<div class="outs">'+spot('red','Red','red')+spot('black','Black','black')+spot('odd','Odd')+spot('even','Even')+spot('low','1-'+hf)+spot('high',(hf+1)+'-'+N)+luckSpot()+spot('t1','1-'+t,'s3')+spot('t2',(t+1)+'-'+2*t,'s3')+spot('t3',(2*t+1)+'-'+N,'s3')+spot('k1','1·4·7…','s3')+spot('k2','2·5·8…','s3')+spot('k3','3·6·9…','s3')+(has('unwritten')?spot('void','The Void','voidspot'):'')+'</div>';}
   h+='<div class="row act">';
   if(G.mode==='bet'){
