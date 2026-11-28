@@ -408,7 +408,7 @@ button.big{font-size:13px;padding:4px 10px}
 .bld{display:block;font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);opacity:.85;margin:-1px 0 4px}
 .rcpt{margin-top:6px;border:1px solid var(--edge);border-radius:8px;padding:6px 9px;background:rgba(0,0,0,.28);font-size:12.5px;max-width:420px}
 .rcpt .rh{display:flex;justify-content:space-between;gap:10px;font-family:'Rye',serif;color:var(--accent);font-size:14px;border-bottom:1px solid var(--edge);padding-bottom:3px;margin-bottom:3px}
-.rcpt .rl{display:flex;justify-content:space-between;gap:10px;line-height:1.5}.rcpt .rl.rr span{color:var(--accent)}.rcpt .rl.rp span{color:#ffd76b}.rcpt b{font-weight:400}.rcpt .good{color:#8fe3a0}.rcpt .bad{color:#ff9a8a}
+.rcpt .rl{display:flex;justify-content:space-between;gap:10px;line-height:1.5}.rcpt button.rl{width:100%;background:none;border:0;border-radius:4px;padding:1px 2px;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:0}.rcpt button.rl:hover,.rcpt button.rl:active{background:rgba(255,255,255,.08)}.rcpt .rl i{font-style:normal;opacity:.5}.rcpt .rl.rr span{color:var(--accent)}.rcpt .rl.rp span{color:#ffd76b}.rcpt b{font-weight:400}.rcpt .good{color:#8fe3a0}.rcpt .bad{color:#ff9a8a}
 .heatbar em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,120,60,.85) 0 4px,rgba(255,120,60,.3) 4px 8px)}
 .hz{display:grid;grid-template-columns:repeat(4,1fr);font-size:9.5px;opacity:.8;margin-top:2px;text-align:center}.hz b{font-weight:400}.hz b.on{color:#ffb36b;opacity:1}
 #powers button small{display:block;font-size:9.5px;opacity:.75;font-family:inherit}
@@ -665,7 +665,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v91',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v92',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -736,8 +736,9 @@ function payout(hits){
 }
 function receipt(hits,staked){const L=[],sr=G.relics,sh=G.heat;try{G.relics=[];G.heat=0;let prev=payout(hits).back;L.push(['Your bets',prev-staked]);const cur=[];
   for(const id of [...new Set(sr)]){sr.forEach(x=>{if(x===id)cur.push(x);});G.relics=cur.slice();const b=payout(hits).back;if(b!==prev){const r=RELICS.find(x=>x.id===id);L.push([r?r.name:id,b-prev,'r']);prev=b;}}
-  G.relics=sr;G.heat=sh;const b=payout(hits).back;if(b!==prev)L.push(['Heat '+sh+' bonus',b-prev,'r']);}catch(e){}finally{G.relics=sr;G.heat=sh;}return L;}
-function rcptHTML(){const R=G.rcpt;if(!R||G.mode==='shop'||G.mode==='intro')return '';const row=x=>'<div class="rl'+(x[2]==='r'?' rr':x[2]==='b'?' rb':'')+'"><span>'+x[0]+'</span><b class="'+(x[1]>0?'good':x[1]<0?'bad':'')+'">'+(x[1]>0?'+':x[1]<0?'-':'')+fmt(Math.abs(x[1]))+'</b></div>';
+  G.relics=sr;G.heat=sh;const b=payout(hits).back;if(b!==prev)L.push(['Heat bonus (Heat was '+sh+')',b-prev,'r']);}catch(e){}finally{G.relics=sr;G.heat=sh;}return L;}
+function rcptHTML(){const R=G.rcpt;if(!R||G.mode==='shop'||G.mode==='intro')return '';const act=n=>{const r=RELICS.find(q=>q.name===n);if(r)return 'data-act="items" data-hl="'+n.replace(/"/g,'&quot;')+'"';return 'data-act="sheet" data-t="'+(/^Heat|Caught|ine|Talked/.test(n)?'heat':/Lucky/.test(n)?'lucky':'pay')+'"';};
+  const row=x=>'<button class="rl'+(x[2]==='r'?' rr':x[2]==='b'?' rb':'')+'" '+act(x[0])+'><span>'+x[0]+' <i>\u203A</i></span><b class="'+(x[1]>0?'good':x[1]<0?'bad':'')+'">'+(x[1]>0?'+':x[1]<0?'-':'')+fmt(Math.abs(x[1]))+'</b></button>';
   return '<div class="rcpt"><div class="rh"><span>'+R.where+'</span><b class="'+(R.total>0?'good':R.total<0?'bad':'')+'">'+(R.total>0?'+':R.total<0?'-':'')+fmt(Math.abs(R.total))+'</b></div>'+(R.prize?'<div class="rl rp"><span>\u2605 Lucky Draw: you won '+R.prize+'</span></div>':'')+R.lines.map(row).join('')+'</div>';}
 function hitsFor(i){const n=G.wheel.length,h=[{i,w:1}];if(has('noneuclid'))h.push({i:(i+Math.floor(n/2))%n,w:0.5});return h;}
 function pinfo(p,i){
