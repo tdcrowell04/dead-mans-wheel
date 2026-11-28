@@ -419,6 +419,11 @@ button.big{font-size:13px;padding:4px 10px}
 .card.on{outline:2px solid var(--accent);background:rgba(217,164,65,.14)}.card .p .lv{display:block;font-size:11px;opacity:.85;color:var(--ink)}.card .p .lv.bad{color:#ffb08a;opacity:1}.card .p .buy{display:block;font-family:inherit;font-size:13px;color:#fff;background:var(--accent);color:#1a0d06;border-radius:6px;padding:4px 6px;margin-bottom:2px;text-align:center}
 .shopbar{position:sticky;top:0;z-index:3;font-size:14px}.shopbar .good{color:#8fe3a0;font-weight:400}.shopbar .bad{color:#ffb08a;font-weight:400}
 .stabs{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}
+.spot.marked{box-shadow:0 0 0 3px #f4ecd8 inset,0 0 14px rgba(244,236,216,.9) inset;background-image:linear-gradient(rgba(244,236,216,.3),rgba(244,236,216,.3));z-index:1}
+.spot .msk{font-style:normal;font-size:1.25em;line-height:1;color:#fff;margin-right:3px;text-shadow:0 0 3px #000,0 0 3px #000}
+.spot .mx{font-style:normal;font-size:.68em;color:#1a0d06;background:#f4ecd8;border-radius:4px;padding:0 3px;margin-left:3px;vertical-align:middle}
+.markov{fill:rgba(244,236,216,.28);stroke:#fff;stroke-width:3.5;stroke-dasharray:6 3;pointer-events:none}
+.mskull{fill:#f4ecd8;text-anchor:middle;dominant-baseline:central;pointer-events:none;paint-order:stroke;stroke:#000;stroke-width:2.5px}
 .placard{display:flex;align-items:center;justify-content:center;gap:10px;width:max-content;max-width:100%;margin:0 auto 6px;padding:2px 14px;height:24px;box-sizing:border-box;border-radius:5px;border:1px solid #6e531c;background:linear-gradient(#e2bd62,#b88a2e);color:#24160a;font-family:'Rye',serif;font-size:11.5px;letter-spacing:.09em;line-height:1;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 2px 4px rgba(0,0,0,.45)}
 .placard b{font-weight:400;font-size:14px;letter-spacing:0}
 .placard i{font-style:normal;font-size:9px;opacity:.6}
@@ -847,7 +852,7 @@ function newGame(){
      snakeUsed:0,remove:false,mode:'intro',armed:null,useBall:0,N:12,zeros:[0],house:13,magnet:-1,chip:5,balls:[],wAngle:0,shop:null,rerolls:0,
      fast:G?G.fast:false,fs:G?G.fs:false,fsHold:false,heat:0,watch:[],lucky:[],bought:{r:0,t:0,s:0},taught:{},msg:'',res:'',hits:[],
      wheel:ORDER.map(mk)};
-  G.log={id:'r'+Date.now().toString(36),version:'v113',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
+  G.log={id:'r'+Date.now().toString(36),version:'v114',started:new Date().toISOString(),status:'playing',startRelic:null,nights:[],spins:[],buys:[]};
 }
 
 /* ---------- audio ---------- */
@@ -1728,6 +1733,8 @@ function renderWheel(){
     s+='<path class="eyeov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';});
   if(G.mode!=='shop'&&G.watch.length&&G.watch[0]<n){const f=v=>v.toFixed(1),mid=G.watch[Math.floor(G.watch.length/2)],M=polar(183,(mid+0.5)*seg);
     s+='<text class="magic up" data-x="'+f(M[0])+'" data-y="'+f(M[1])+'" x="'+f(M[0])+'" y="'+f(M[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(M[0])+' '+f(M[1])+')">👁</text>';}
+  {const mkn=G.mode!=='shop'?markNum():null;if(mkn!=null)G.wheel.forEach((p,i)=>{if(p.void||p.num!==mkn)return;const f=v=>v.toFixed(1),a0=i*seg,a1=a0+seg,A=polar(172,a0),B=polar(172,a1),C=polar(92,a1),D=polar(92,a0),M=polar(132,a0+seg/2);
+    s+='<path class="markov" d="M'+f(A[0])+' '+f(A[1])+'A172 172 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/><text class="mskull up" style="font-size:'+Math.max(13,Math.min(22,seg*1.6)).toFixed(1)+'px" data-x="'+f(M[0])+'" data-y="'+f(M[1])+'" x="'+f(M[0])+'" y="'+f(M[1])+'" transform="rotate('+(-G.wAngle).toFixed(1)+' '+f(M[0])+' '+f(M[1])+')">\u2620</text>';});}
   if(G.magnet>=0&&G.magnet<n){
     const a0=G.magnet*seg,a1=a0+seg,f=v=>v.toFixed(1),A=polar(192,a0),B=polar(192,a1),C=polar(92,a1),D=polar(92,a0),M=polar(183,a0+seg/2);
     s+='<path class="magov" d="M'+f(A[0])+' '+f(A[1])+'A192 192 0 '+large+' 1 '+f(B[0])+' '+f(B[1])+'L'+f(C[0])+' '+f(C[1])+'A92 92 0 '+large+' 0 '+f(D[0])+' '+f(D[1])+'Z"/>';
@@ -1757,7 +1764,7 @@ function boardHTML(){
   const V=isVert(),N=G.N,W=N/3+1,f=v=>v.toFixed(3)+'%';
   const rect=(x,y,w,h)=>V?'left:'+f((3-y-h)/3*100)+';top:'+f(x/W*100)+';width:'+f(h/3*100)+';height:'+f(w/W*100):'left:'+f(x/W*100)+';top:'+f(y/3*100)+';width:'+f(w/W*100)+';height:'+f(h/3*100);
   const wn=new Set(G.watch.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num)),ln=new Set(G.lucky.map(i=>G.wheel[i]).filter(q=>q&&!q.void).map(q=>q.num));
-  const cell=(k,label,cls,st8)=>{const st=G.bets[k],w=wn.has(+k.slice(1)),lk=ln.has(+k.slice(1));return '<button class="spot '+cls+(st?' bet':'')+(w?' watched':'')+(lk?' lucky':'')+'" data-bet="'+k+'" style="'+st8+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'><span class="l">'+(lk?'<i class="ls">★</i>':'')+(w?'👁 ':'')+label+'</span>'+(st?'<span class="stake">'+abbr(st)+'</span>':'')+spotOutcome(k,st)+'</button>';};
+  const mkn=markNum(),cell=(k,label,cls,st8)=>{const st=G.bets[k],w=wn.has(+k.slice(1)),lk=ln.has(+k.slice(1)),mk=mkn!=null&&+k.slice(1)===mkn;return '<button class="spot '+cls+(st?' bet':'')+(w?' watched':'')+(lk?' lucky':'')+(mk?' marked':'')+'" data-bet="'+k+'" style="'+st8+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'><span class="l">'+(mk?'<i class="msk">\u2620</i>':'')+(lk?'<i class="ls">★</i>':'')+(w?'👁 ':'')+label+(mk?'<i class="mx">x'+(1+cnt('marked'))+'</i>':'')+'</span>'+(st?'<span class="stake">'+abbr(st)+'</span>':'')+spotOutcome(k,st)+'</button>';};
   const hot=(k,x,y)=>{const st=G.bets[k];return '<button class="hot'+(k[0]==='c'?' cn':'')+(st?' has':'')+'" data-bet="'+k+'" style="left:'+f(V?(3-y)/3*100:x/W*100)+';top:'+f(V?x/W*100:y/3*100)+'"'+(deadBet(k)||G.mode!=='bet'?' disabled':'')+'>'+(st?abbr(st):'')+'</button>';};
   let h='<div class="board'+(V?' vert':'')+(totalBets()>0?' live':'')+'"'+(V?' style="height:'+W*44+'px"':'')+'>';
   const zs=G.zeros.slice().sort((a,b)=>b-a),zh=3/zs.length;
@@ -1837,7 +1844,7 @@ const direct=(a,b)=>(LINK[a]&&LINK[a][0]===b)||(LINK[b]&&LINK[b][0]===a);
 const SYN0={horseshoe:['surething','eye','preacher','streak'],surething:['eye','heavy'],longshot:['notch','closecall','pull','reach'],notch:['closecall','pull'],closecall:['reach'],pull:['ace'],reach:['ace'],tooth:['pan','assay'],pan:['assay'],outlaw:['wanted','devil'],wanted:['devil','tongue','pardon'],ace:['gloves','hourglass','deck','tongue'],gloves:['hourglass','deck','tongue','sleeve'],tinstar:['jailbird','pardon'],jailbird:['pardon'],streak:['wind','barrel','watch','snake'],sore:['snake','barrel'],rabbit:['clover','wishbone'],clover:['wishbone'],deed:['credit','partner','bounty'],partner:['credit'],undertaker:['heavy','spade','hunger'],heavy:['spade'],felt:['unwritten'],preacher:['eye']};
 const TSYN={pry:['horseshoe','surething','undertaker','heavy','spade','scrap','hardware','fullcoat'],paint:['horseshoe','surething','undertaker','heavy','eye','brush','fullcoat','wetpaint','hardware'],brand:['longshot','notch','closecall','pull','heavy','undertaker','claim','preacher','steady','deadeye','marked','hardware'],gild:['tooth','pan','assay','undertaker','fools','claim','devil','fever','lamp','paydirt','dust','strike','colorblind','hardware'],door:['felt','unwritten','undertaker','nails','hardware'],snudge:['reach','ace','closecall','gloves','hourglass','tongue','nails','marked','sawedoff'],smag:['pull','ace','longshot','notch','gloves','fools','charm','hound','marked','deadeye'],sball:['ace','noneuclid','gloves']};
 const SYN=(()=>{const m={};for(const a in SYN0)SYN0[a].forEach(b=>{(m[a]=m[a]||new Set()).add(b);(m[b]=m[b]||new Set()).add(a);});return m;})();
-function synTag(kind,id){const own=[...new Set(G.relics)];
+function synTag(kind,id){return '';const own=[...new Set(G.relics)];
   if(kind==='r'){if(own.some(o=>o!==id&&direct(o,id)))return '<span class="syn">\u2726 Something you carry pairs with this</span>';if(own.some(o=>o!==id&&linked(o,id)))return '<span class="syn fit">\u2727 This would help something you carry</span>';return '';}
   return own.some(o=>(TSYN[id]||[]).includes(o))?'<span class="syn fit">\u2727 Something you carry could use this</span>':'';}
 function limCard(sel){const p=limUpPrice(),nb=nextLimBase(),now=r5(nb*limMult()),nx=r5(nb*(limMult()+0.25)),a=G.chips-p,nxt=nextTab();return '<button class="card q2'+(G.limBought?' sold':'')+(sel==='lim'?' on':'')+'" data-act="limUp"'+(G.limBought?' disabled':'')+'><b>Raise the Stakes</b><i class="bld">Table max</i>Silas raises your table max by a quarter of the tab, for the rest of the run. One a night. Each raise costs 1.5 times the last. <i class="hint">Tomorrow: '+fmt(now)+' becomes '+fmt(nx)+' a spin.</i><span class="p">'+(G.limBought?'Raised tonight':sel==='lim'?'<b class="buy">Tap again to buy \u00B7 '+fmt(p)+'</b><span class="lv'+(a<nxt&&G.night<7?' bad':'')+'">leaves '+fmt(a)+'</span>':fmt(p)+' chips')+'</span></button>';}
